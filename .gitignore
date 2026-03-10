@@ -1,0 +1,22 @@
+# Build files
+build/
+install/
+log/
+*.pyc
+__pycache__/
+*.swp
+*.swo
+
+# IDE files
+.vscode/
+.idea/
+
+# ROS specific
+devel/
+*.bag
+*.pgm
+*.yaml
+
+# System files
+.DS_Store
+*~

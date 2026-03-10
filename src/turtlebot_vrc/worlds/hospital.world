@@ -1,0 +1,166 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <world name="hospital">
+
+    <include><uri>model://ground_plane</uri></include>
+    <include><uri>model://sun</uri></include>
+
+    <!-- ── OUTER WALLS ── -->
+    <!-- South wall -->
+    <model name="wall_south">
+      <static>true</static>
+      <pose>0 -6 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>20 0.2 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>20 0.2 1</size></box></geometry>
+          <material><ambient>0.8 0.8 0.8 1</ambient></material></visual>
+      </link>
+    </model>
+
+    <!-- North wall -->
+    <model name="wall_north">
+      <static>true</static>
+      <pose>0 6 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>20 0.2 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>20 0.2 1</size></box></geometry>
+          <material><ambient>0.8 0.8 0.8 1</ambient></material></visual>
+      </link>
+    </model>
+
+    <!-- West wall -->
+    <model name="wall_west">
+      <static>true</static>
+      <pose>-10 0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>0.2 12 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.2 12 1</size></box></geometry>
+          <material><ambient>0.8 0.8 0.8 1</ambient></material></visual>
+      </link>
+    </model>
+
+    <!-- East wall -->
+    <model name="wall_east">
+      <static>true</static>
+      <pose>10 0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>0.2 12 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.2 12 1</size></box></geometry>
+          <material><ambient>0.8 0.8 0.8 1</ambient></material></visual>
+      </link>
+    </model>
+
+    <!-- ── CORRIDOR DIVIDER (horizontal middle wall with gaps) ── -->
+    <!-- Left section -->
+    <model name="corridor_wall_left">
+      <static>true</static>
+      <pose>-5.5 0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>7 0.2 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>7 0.2 1</size></box></geometry>
+          <material><ambient>0.7 0.7 0.9 1</ambient></material></visual>
+      </link>
+    </model>
+    <!-- Right section -->
+    <model name="corridor_wall_right">
+      <static>true</static>
+      <pose>5.5 0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>7 0.2 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>7 0.2 1</size></box></geometry>
+          <material><ambient>0.7 0.7 0.9 1</ambient></material></visual>
+      </link>
+    </model>
+
+    <!-- ── ROOM DIVIDERS ── -->
+    <!-- Reception divider -->
+    <model name="wall_reception">
+      <static>true</static>
+      <pose>-7 3 0.5 0 0 1.5708</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>5.8 0.2 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>5.8 0.2 1</size></box></geometry>
+          <material><ambient>0.8 0.8 0.8 1</ambient></material></visual>
+      </link>
+    </model>
+
+    <!-- Pharmacy divider -->
+    <model name="wall_pharmacy">
+      <static>true</static>
+      <pose>-2 3 0.5 0 0 1.5708</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>5.8 0.2 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>5.8 0.2 1</size></box></geometry>
+          <material><ambient>0.8 0.8 0.8 1</ambient></material></visual>
+      </link>
+    </model>
+
+    <!-- ICU divider -->
+    <model name="wall_icu">
+      <static>true</static>
+      <pose>4 3 0.5 0 0 1.5708</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>5.8 0.2 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>5.8 0.2 1</size></box></geometry>
+          <material><ambient>0.8 0.8 0.8 1</ambient></material></visual>
+      </link>
+    </model>
+
+    <!-- ── BEDS (obstacles) ── -->
+    <!-- ICU bed 1 -->
+    <model name="bed_icu_1">
+      <static>true</static>
+      <pose>6 4 0.3 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>1.8 0.9 0.6</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>1.8 0.9 0.6</size></box></geometry>
+          <material><ambient>0.9 0.9 1.0 1</ambient></material></visual>
+      </link>
+    </model>
+
+    <!-- ICU bed 2 -->
+    <model name="bed_icu_2">
+      <static>true</static>
+      <pose>8 4 0.3 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>1.8 0.9 0.6</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>1.8 0.9 0.6</size></box></geometry>
+          <material><ambient>0.9 0.9 1.0 1</ambient></material></visual>
+      </link>
+    </model>
+
+    <!-- Patient room bed -->
+    <model name="bed_patient_1">
+      <static>true</static>
+      <pose>0 -4 0.3 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>1.8 0.9 0.6</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>1.8 0.9 0.6</size></box></geometry>
+          <material><ambient>0.9 0.9 1.0 1</ambient></material></visual>
+      </link>
+    </model>
+
+    <!-- Pharmacy counter -->
+    <model name="pharmacy_counter">
+      <static>true</static>
+      <pose>-4 4 0.4 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>2.0 0.6 0.8</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>2.0 0.6 0.8</size></box></geometry>
+          <material><ambient>0.6 0.8 0.6 1</ambient></material></visual>
+      </link>
+    </model>
+
+    <!-- Reception desk -->
+    <model name="reception_desk">
+      <static>true</static>
+      <pose>-8 4 0.4 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>2.0 0.6 0.8</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>2.0 0.6 0.8</size></box></geometry>
+          <material><ambient>0.8 0.7 0.5 1</ambient></material></visual>
+      </link>
+    </model>
+
+  </world>
+</sdf>

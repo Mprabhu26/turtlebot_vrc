@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>turtlebot_vrc</name>
+  <version>1.0.0</version>
+  <description>Voice Recognition Control for TurtleBot3</description>
+  <maintainer email="mithila.prabhu@stud.fra-uas.de">Mithila Prabhu</maintainer>
+  <license>MIT</license>
+  <buildtool_depend>ament_python</buildtool_depend>
+  <depend>rclpy</depend>
+  <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
