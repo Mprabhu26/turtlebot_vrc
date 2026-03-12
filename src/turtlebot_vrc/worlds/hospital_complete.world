@@ -1,0 +1,179 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <world name="hospital_simple">
+    <include><uri>model://ground_plane</uri></include>
+    <include><uri>model://sun</uri></include>
+    <physics type="ode">
+      <real_time_update_rate>1000</real_time_update_rate>
+      <max_step_size>0.001</max_step_size>
+    </physics>
+
+    <!-- PHARMACY (NW) - Green box at (-6, +6) -->
+    <model name="PHARMACY">
+      <static>true</static>
+      <pose>-6 6 0.5 0 0 0</pose>
+      <link name="body">
+        <visual name="visual">
+          <geometry><box><size>4 4 1</size></box></geometry>
+          <material><ambient>0 1 0 0.8</ambient></material>
+        </visual>
+        <collision name="collision">
+          <geometry><box><size>4 4 1</size></box></geometry>
+        </collision>
+      </link>
+    </model>
+
+    <!-- ICU (NE) - Red box at (+6, +6) -->
+    <model name="ICU">
+      <static>true</static>
+      <pose>6 6 0.5 0 0 0</pose>
+      <link name="body">
+        <visual name="visual">
+          <geometry><box><size>4 4 1</size></box></geometry>
+          <material><ambient>1 0 0 0.8</ambient></material>
+        </visual>
+        <collision name="collision">
+          <geometry><box><size>4 4 1</size></box></geometry>
+        </collision>
+      </link>
+    </model>
+
+    <!-- RECEPTION (SW) - Blue box at (-6, -6) -->
+    <model name="RECEPTION">
+      <static>true</static>
+      <pose>-6 -6 0.5 0 0 0</pose>
+      <link name="body">
+        <visual name="visual">
+          <geometry><box><size>4 4 1</size></box></geometry>
+          <material><ambient>0 0 1 0.8</ambient></material>
+        </visual>
+        <collision name="collision">
+          <geometry><box><size>4 4 1</size></box></geometry>
+        </collision>
+      </link>
+    </model>
+
+    <!-- WARD (SE) - Yellow box at (+6, -6) -->
+    <model name="WARD">
+      <static>true</static>
+      <pose>6 -6 0.5 0 0 0</pose>
+      <link name="body">
+        <visual name="visual">
+          <geometry><box><size>4 4 1</size></box></geometry>
+          <material><ambient>1 1 0 0.8</ambient></material>
+        </visual>
+        <collision name="collision">
+          <geometry><box><size>4 4 1</size></box></geometry>
+        </collision>
+      </link>
+    </model>
+
+    <!-- NAME SIGNS on top of each room -->
+    <!-- PHARMACY sign -->
+    <model name="sign_pharmacy">
+      <static>true</static>
+      <pose>-6 6 1.2 0 0 0</pose>
+      <link name="link">
+        <visual name="v">
+          <geometry><box><size>3 0.6 0.4</size></box></geometry>
+          <material><ambient>1 1 1 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+    <!-- ICU sign -->
+    <model name="sign_icu">
+      <static>true</static>
+      <pose>6 6 1.2 0 0 0</pose>
+      <link name="link">
+        <visual name="v">
+          <geometry><box><size>3 0.6 0.4</size></box></geometry>
+          <material><ambient>1 1 1 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+    <!-- RECEPTION sign -->
+    <model name="sign_reception">
+      <static>true</static>
+      <pose>-6 -6 1.2 0 0 0</pose>
+      <link name="link">
+        <visual name="v">
+          <geometry><box><size>3 0.6 0.4</size></box></geometry>
+          <material><ambient>1 1 1 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+    <!-- WARD sign -->
+    <model name="sign_ward">
+      <static>true</static>
+      <pose>6 -6 1.2 0 0 0</pose>
+      <link name="link">
+        <visual name="v">
+          <geometry><box><size>3 0.6 0.4</size></box></geometry>
+          <material><ambient>1 1 1 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- CORRIDOR WALLS with gaps for robot to pass through -->
+    <!-- North corridor wall: gap at x=-6 (for pharmacy) and x=+6 (for ICU) -->
+    <!-- North wall LEFT segment: x=-10 to x=-8 -->
+    <model name="wall_n1"><static>true</static><pose>-9 2 0.5 0 0 0</pose>
+      <link name="body"><visual name="v"><geometry><box><size>2 0.2 1</size></box></geometry>
+        <material><ambient>0.7 0.7 0.7 1</ambient></material></visual>
+        <collision name="c"><geometry><box><size>2 0.2 1</size></box></geometry></collision>
+      </link></model>
+    <!-- North wall: x=-5 to x=-1 (gap at -8 to -4 for pharmacy entry) -->
+    <model name="wall_n2"><static>true</static><pose>-3 2 0.5 0 0 0</pose>
+      <link name="body"><visual name="v"><geometry><box><size>4 0.2 1</size></box></geometry>
+        <material><ambient>0.7 0.7 0.7 1</ambient></material></visual>
+        <collision name="c"><geometry><box><size>4 0.2 1</size></box></geometry></collision>
+      </link></model>
+    <!-- North wall: x=+1 to x=+4 (gap at +4 to +8 for ICU entry) -->
+    <model name="wall_n3"><static>true</static><pose>2 2 0.5 0 0 0</pose>
+      <link name="body"><visual name="v"><geometry><box><size>2 0.2 1</size></box></geometry>
+        <material><ambient>0.7 0.7 0.7 1</ambient></material></visual>
+        <collision name="c"><geometry><box><size>2 0.2 1</size></box></geometry></collision>
+      </link></model>
+    <!-- North wall RIGHT segment: x=+8 to x=+10 -->
+    <model name="wall_n4"><static>true</static><pose>9 2 0.5 0 0 0</pose>
+      <link name="body"><visual name="v"><geometry><box><size>2 0.2 1</size></box></geometry>
+        <material><ambient>0.7 0.7 0.7 1</ambient></material></visual>
+        <collision name="c"><geometry><box><size>2 0.2 1</size></box></geometry></collision>
+      </link></model>
+
+    <!-- South corridor wall: same pattern -->
+    <model name="wall_s1"><static>true</static><pose>-9 -2 0.5 0 0 0</pose>
+      <link name="body"><visual name="v"><geometry><box><size>2 0.2 1</size></box></geometry>
+        <material><ambient>0.7 0.7 0.7 1</ambient></material></visual>
+        <collision name="c"><geometry><box><size>2 0.2 1</size></box></geometry></collision>
+      </link></model>
+    <model name="wall_s2"><static>true</static><pose>-3 -2 0.5 0 0 0</pose>
+      <link name="body"><visual name="v"><geometry><box><size>4 0.2 1</size></box></geometry>
+        <material><ambient>0.7 0.7 0.7 1</ambient></material></visual>
+        <collision name="c"><geometry><box><size>4 0.2 1</size></box></geometry></collision>
+      </link></model>
+    <model name="wall_s3"><static>true</static><pose>2 -2 0.5 0 0 0</pose>
+      <link name="body"><visual name="v"><geometry><box><size>2 0.2 1</size></box></geometry>
+        <material><ambient>0.7 0.7 0.7 1</ambient></material></visual>
+        <collision name="c"><geometry><box><size>2 0.2 1</size></box></geometry></collision>
+      </link></model>
+    <model name="wall_s4"><static>true</static><pose>9 -2 0.5 0 0 0</pose>
+      <link name="body"><visual name="v"><geometry><box><size>2 0.2 1</size></box></geometry>
+        <material><ambient>0.7 0.7 0.7 1</ambient></material></visual>
+        <collision name="c"><geometry><box><size>2 0.2 1</size></box></geometry></collision>
+      </link></model>
+
+    <!-- CORRIDOR FLOOR -->
+    <model name="corridor_floor">
+      <static>true</static>
+      <pose>0 0 0.01 0 0 0</pose>
+      <link name="body">
+        <visual name="visual">
+          <geometry><box><size>20 4 0.1</size></box></geometry>
+          <material><ambient>0.85 0.85 0.85 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+  </world>
+</sdf>
