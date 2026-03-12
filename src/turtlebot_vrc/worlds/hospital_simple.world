@@ -1,0 +1,98 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <world name="hospital_simple">
+    <include><uri>model://ground_plane</uri></include>
+    <include><uri>model://sun</uri></include>
+
+    <physics type="ode">
+      <real_time_update_rate>1000</real_time_update_rate>
+      <max_step_size>0.001</max_step_size>
+    </physics>
+
+    <!-- OUTER BOUNDARY WALLS -->
+    <model name="wall_south">
+      <static>true</static>
+      <pose>0 -8 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>22 0.2 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>22 0.2 1</size></box></geometry>
+          <material><ambient>0.8 0.8 0.8 1</ambient></material></visual>
+      </link>
+    </model>
+
+    <model name="wall_north">
+      <static>true</static>
+      <pose>0 8 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>22 0.2 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>22 0.2 1</size></box></geometry>
+          <material><ambient>0.8 0.8 0.8 1</ambient></material></visual>
+      </link>
+    </model>
+
+    <model name="wall_west">
+      <static>true</static>
+      <pose>-11 0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>0.2 16 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.2 16 1</size></box></geometry>
+          <material><ambient>0.8 0.8 0.8 1</ambient></material></visual>
+      </link>
+    </model>
+
+    <model name="wall_east">
+      <static>true</static>
+      <pose>11 0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>0.2 16 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.2 16 1</size></box></geometry>
+          <material><ambient>0.8 0.8 0.8 1</ambient></material></visual>
+      </link>
+    </model>
+
+    <!-- PHARMACY -->
+    <model name="pharmacy_counter">
+      <static>true</static>
+      <pose>-6 5 0.3 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>2 0.5 0.6</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>2 0.5 0.6</size></box></geometry>
+          <material><ambient>0.2 0.8 0.2 1</ambient></material></visual>
+      </link>
+    </model>
+
+    <!-- ICU -->
+    <model name="icu_bed">
+      <static>true</static>
+      <pose>6 5 0.3 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>2 1 0.6</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>2 1 0.6</size></box></geometry>
+          <material><ambient>0.8 0.2 0.2 1</ambient></material></visual>
+      </link>
+    </model>
+
+    <!-- RECEPTION -->
+    <model name="reception_desk">
+      <static>true</static>
+      <pose>-6 -5 0.3 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>2 0.5 0.6</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>2 0.5 0.6</size></box></geometry>
+          <material><ambient>0.2 0.2 0.8 1</ambient></material></visual>
+      </link>
+    </model>
+
+    <!-- WARD -->
+    <model name="ward_bed">
+      <static>true</static>
+      <pose>6 -5 0.3 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>2 1 0.6</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>2 1 0.6</size></box></geometry>
+          <material><ambient>0.8 0.8 0.2 1</ambient></material></visual>
+      </link>
+    </model>
+
+  </world>
+</sdf>

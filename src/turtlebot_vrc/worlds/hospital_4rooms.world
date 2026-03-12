@@ -1,0 +1,56 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <world name="hospital_4rooms">
+    <include><uri>model://ground_plane</uri></include>
+    <include><uri>model://sun</uri></include>
+
+    <!-- PHARMACY (NW) - GREEN -->
+    <model name="pharmacy"><static>true</static><pose>-6 6 0.2 0 0 0</pose>
+      <link name="link"><visual name="v"><geometry><box><size>4 4 0.1</size></box></geometry>
+      <material><ambient>0 1 0 1</ambient></material></visual></link>
+    </model>
+
+    <!-- ICU (NE) - RED -->
+    <model name="icu"><static>true</static><pose>6 6 0.2 0 0 0</pose>
+      <link name="link"><visual name="v"><geometry><box><size>4 4 0.1</size></box></geometry>
+      <material><ambient>1 0 0 1</ambient></material></visual></link>
+    </model>
+
+    <!-- RECEPTION (SW) - BLUE -->
+    <model name="reception"><static>true</static><pose>-6 -6 0.2 0 0 0</pose>
+      <link name="link"><visual name="v"><geometry><box><size>4 4 0.1</size></box></geometry>
+      <material><ambient>0 0 1 1</ambient></material></visual></link>
+    </model>
+
+    <!-- WARD (SE) - YELLOW -->
+    <model name="ward"><static>true</static><pose>6 -6 0.2 0 0 0</pose>
+      <link name="link"><visual name="v"><geometry><box><size>4 4 0.1</size></box></geometry>
+      <material><ambient>1 1 0 1</ambient></material></visual></link>
+    </model>
+
+    <!-- CORRIDOR (center) - GRAY -->
+    <model name="corridor"><static>true</static><pose>0 0 0.1 0 0 0</pose>
+      <link name="link"><visual name="v"><geometry><box><size>20 3 0.1</size></box></geometry>
+      <material><ambient>0.7 0.7 0.7 1</ambient></material></visual></link>
+    </model>
+
+    <!-- SIMPLE WALLS -->
+    <model name="wall_left"><static>true</static><pose>-10 0 0.5 0 0 0</pose>
+      <link name="link"><visual name="v"><geometry><box><size>0.2 20 1</size></box></geometry>
+      <material><ambient>0.5 0.5 0.5 1</ambient></material></visual></link>
+    </model>
+    <model name="wall_right"><static>true</static><pose>10 0 0.5 0 0 0</pose>
+      <link name="link"><visual name="v"><geometry><box><size>0.2 20 1</size></box></geometry>
+      <material><ambient>0.5 0.5 0.5 1</ambient></material></visual></link>
+    </model>
+    <model name="wall_top"><static>true</static><pose>0 10 0.5 0 0 0</pose>
+      <link name="link"><visual name="v"><geometry><box><size>20 0.2 1</size></box></geometry>
+      <material><ambient>0.5 0.5 0.5 1</ambient></material></visual></link>
+    </model>
+    <model name="wall_bottom"><static>true</static><pose>0 -10 0.5 0 0 0</pose>
+      <link name="link"><visual name="v"><geometry><box><size>20 0.2 1</size></box></geometry>
+      <material><ambient>0.5 0.5 0.5 1</ambient></material></visual></link>
+    </model>
+
+  </world>
+</sdf>
