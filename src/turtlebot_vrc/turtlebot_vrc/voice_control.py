@@ -44,18 +44,13 @@ FROM_CENTER = {
     'icu':        [(S,0.0,EW), (0.0, 1.0,T90), (S,0.0,NS)],
     # BLUE/pharmacy (+6,-6): go EAST 22s, turn RIGHT→SOUTH, go NS
     'pharmacy':   [(S,0.0,EW), (0.0,-1.0,T90), (S,0.0,NS)],
-    # RED/reception (-6,+6): turn 180→WEST, go EW, turn LEFT... 
-    #   facing WEST, turn LEFT = face SOUTH? No.
-    #   facing WEST (180deg), turn RIGHT (ang=-1.0) = face NORTH
+    # RED/reception (-6,+6): turn 180→WEST, go EW, turn RIGHT→NORTH
     'reception':  [(0.0,1.0,T180), (S,0.0,EW), (0.0,-1.0,T90), (S,0.0,NS)],
     # GREEN/ward  (-6,-6): turn 180→WEST, go EW, turn LEFT→SOUTH
-    #   facing WEST, turn LEFT (ang=+1.0) = face SOUTH
     'ward':       [(0.0,1.0,T180), (S,0.0,EW), (0.0, 1.0,T90), (S,0.0,NS)],
 }
 
 # TO CENTER: exact reverse
-# From ICU (entered facing NORTH):
-#   go back SOUTH NS, turn RIGHT→EAST, go back WEST EW, face EAST done
 TO_CENTER = {
     'icu':       [(-S,0.0,NS), (0.0,-1.0,T90), (-S,0.0,EW)],
     'pharmacy':  [(-S,0.0,NS), (0.0, 1.0,T90), (-S,0.0,EW)],
