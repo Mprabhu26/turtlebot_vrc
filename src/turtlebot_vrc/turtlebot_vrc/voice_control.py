@@ -11,95 +11,56 @@ import io, os, re, json
 SAMPLE_RATE = 16000
 CHUNK_SAMPLES = int(SAMPLE_RATE * 3.0)
 
-# CONFIRMED LAYOUT (top-down view):
-# RED    = top-left     = reception
-# YELLOW = top-right    = icu
-# GREEN  = bottom-left  = ward
-# BLUE   = bottom-right = pharmacy
+# WORLD FILE CONFIRMED:
+# Blocks at: (-6,+6), (+6,+6), (-6,-6), (+6,-6)
+# Robot spawns at (0,0) facing EAST (+X, yaw=0)
+# Corridor walls at y=+2 and y=-2, gaps at x=±6
 #
-# Robot faces SOUTH at spawn
-# S=0.3m/s, T90=1.6s turn 90deg, T180=3.2s turn 180deg
-# CORR=17s along corridor, INTO=10s into room
+# From screenshot behavior:
+# RED    = (-6,+6) = reception
+# YELLOW = (+6,+6) = icu
+# GREEN  = (-6,-6) = ward
+# BLUE   = (+6,-6) = pharmacy
+#
+# Robot faces EAST:
+#   go EAST  (+X): linear=+0.3 directly
+#   go WEST  (-X): turn 180 first
+#   go NORTH (+Y): turn LEFT  (ang=+1.0, 1.6s)
+#   go SOUTH (-Y): turn RIGHT (ang=-1.0, 1.6s)
+#
+# Distances at 0.3m/s:
+#   6m east/west = 20s  (+2s buffer = 22s)
+#   4m north/south = 13s (+2s buffer = 15s)
+# Turn 90° at 1.0rad/s = 1.6s
+# Turn 180° = 3.2s
 
-S=0.3; T90=1.6; T180=3.2; CORR=17.0; INTO=10.0
+S=0.3; T90=1.6; T180=3.2
+EW=22.0  # 6m east/west with buffer
+NS=15.0  # 4m north/south into room with buffer
 
-# Building blocks:
-# go_north  = turn 180 (face north) then go CORR
-# go_south  = go CORR (already facing south)
-# turn_left_enter  = turn left then INTO
-# turn_right_enter = turn right then INTO
-# exit_north_left  = reverse INTO, turn right, reverse CORR, turn 180 (back to center facing south)
-# exit_north_right = reverse INTO, turn left,  reverse CORR, turn 180
-# exit_south_left  = reverse INTO, turn right, reverse CORR
-# exit_south_right = reverse INTO, turn left,  reverse CORR
+# FROM CENTER facing EAST:
+FROM_CENTER = {
+    # YELLOW/icu   (+6,+6): go EAST 22s, turn LEFT→NORTH, go NS
+    'icu':        [(S,0.0,EW), (0.0, 1.0,T90), (S,0.0,NS)],
+    # BLUE/pharmacy (+6,-6): go EAST 22s, turn RIGHT→SOUTH, go NS
+    'pharmacy':   [(S,0.0,EW), (0.0,-1.0,T90), (S,0.0,NS)],
+    # RED/reception (-6,+6): turn 180→WEST, go EW, turn LEFT... 
+    #   facing WEST, turn LEFT = face SOUTH? No.
+    #   facing WEST (180deg), turn RIGHT (ang=-1.0) = face NORTH
+    'reception':  [(0.0,1.0,T180), (S,0.0,EW), (0.0,-1.0,T90), (S,0.0,NS)],
+    # GREEN/ward  (-6,-6): turn 180→WEST, go EW, turn LEFT→SOUTH
+    #   facing WEST, turn LEFT (ang=+1.0) = face SOUTH
+    'ward':       [(0.0,1.0,T180), (S,0.0,EW), (0.0, 1.0,T90), (S,0.0,NS)],
+}
 
-# DIRECT PATHS — hardcoded for every combination
-PATHS = {
-    # ── FROM CENTER ──────────────────────────────────────────────
-    ('center','reception'): [
-        (0.0, 1.0,T180),(S,0.0,CORR),(0.0,1.0,T90),(S,0.0,INTO)],   # N then left→RED
-    ('center','icu'): [
-        (0.0,1.0,T180),(S,0.0,CORR),(0.0,-1.0,T90),(S,0.0,INTO)],   # N then right→YELLOW
-    ('center','ward'): [
-        (S,0.0,CORR),(0.0,-1.0,T90),(S,0.0,INTO)],                   # S then right→GREEN
-    ('center','pharmacy'): [
-        (S,0.0,CORR),(0.0,1.0,T90),(S,0.0,INTO)],                    # S then left→BLUE
-
-    # ── FROM RECEPTION (RED, top-left, entered facing WEST) ──────
-    # Exit: back east INTO, turn south (right), back CORR north, turn south (face south=center)
-    ('reception','center'): [
-        (-S,0.0,INTO),(0.0,-1.0,T90),(-S,0.0,CORR),(0.0,1.0,T180)],
-    ('reception','icu'): [                                             # RED→YELLOW: exit to center, go to icu
-        (-S,0.0,INTO),(0.0,-1.0,T90),(-S,0.0,CORR),                  # back to corridor facing south
-        (0.0,1.0,T180),(S,0.0,CORR),(0.0,-1.0,T90),(S,0.0,INTO)],   # go north, turn right
-    ('reception','ward'): [                                            # RED→GREEN
-        (-S,0.0,INTO),(0.0,-1.0,T90),(-S,0.0,CORR),                  # back to corridor facing south
-        (S,0.0,CORR),(0.0,-1.0,T90),(S,0.0,INTO)],                   # go south, turn right
-    ('reception','pharmacy'): [                                        # RED→BLUE
-        (-S,0.0,INTO),(0.0,-1.0,T90),(-S,0.0,CORR),                  # back to corridor facing south
-        (S,0.0,CORR),(0.0,1.0,T90),(S,0.0,INTO)],                    # go south, turn left
-
-    # ── FROM ICU (YELLOW, top-right, entered facing EAST) ────────
-    # Exit: back west INTO, turn south (left), back CORR, now facing south
-    ('icu','center'): [
-        (-S,0.0,INTO),(0.0,1.0,T90),(-S,0.0,CORR),(0.0,1.0,T180)],
-    ('icu','reception'): [                                             # YELLOW→RED
-        (-S,0.0,INTO),(0.0,1.0,T90),(-S,0.0,CORR),                   # back to corridor facing south
-        (0.0,1.0,T180),(S,0.0,CORR),(0.0,1.0,T90),(S,0.0,INTO)],    # go north, turn left
-    ('icu','ward'): [                                                  # YELLOW→GREEN
-        (-S,0.0,INTO),(0.0,1.0,T90),(-S,0.0,CORR),                   # back to corridor facing south
-        (S,0.0,CORR),(0.0,-1.0,T90),(S,0.0,INTO)],                   # go south, turn right
-    ('icu','pharmacy'): [                                              # YELLOW→BLUE
-        (-S,0.0,INTO),(0.0,1.0,T90),(-S,0.0,CORR),                   # back to corridor facing south
-        (S,0.0,CORR),(0.0,1.0,T90),(S,0.0,INTO)],                    # go south, turn left
-
-    # ── FROM WARD (GREEN, bottom-left, entered facing WEST) ──────
-    # Exit: back east INTO, turn north (left), back CORR south, now facing south
-    ('ward','center'): [
-        (-S,0.0,INTO),(0.0,1.0,T90),(-S,0.0,CORR)],
-    ('ward','reception'): [                                            # GREEN→RED
-        (-S,0.0,INTO),(0.0,1.0,T90),(-S,0.0,CORR),                   # back to corridor facing south
-        (0.0,1.0,T180),(S,0.0,CORR),(0.0,1.0,T90),(S,0.0,INTO)],    # go north, turn left
-    ('ward','icu'): [                                                  # GREEN→YELLOW
-        (-S,0.0,INTO),(0.0,1.0,T90),(-S,0.0,CORR),                   # back to corridor facing south
-        (0.0,1.0,T180),(S,0.0,CORR),(0.0,-1.0,T90),(S,0.0,INTO)],   # go north, turn right
-    ('ward','pharmacy'): [                                             # GREEN→BLUE
-        (-S,0.0,INTO),(0.0,1.0,T90),(-S,0.0,CORR),                   # back to corridor facing south
-        (S,0.0,CORR),(0.0,1.0,T90),(S,0.0,INTO)],                    # go south, turn left
-
-    # ── FROM PHARMACY (BLUE, bottom-right, entered facing EAST) ──
-    # Exit: back west INTO, turn north (right), back CORR south, now facing south
-    ('pharmacy','center'): [
-        (-S,0.0,INTO),(0.0,-1.0,T90),(-S,0.0,CORR)],
-    ('pharmacy','reception'): [                                        # BLUE→RED
-        (-S,0.0,INTO),(0.0,-1.0,T90),(-S,0.0,CORR),                  # back to corridor facing south
-        (0.0,1.0,T180),(S,0.0,CORR),(0.0,1.0,T90),(S,0.0,INTO)],    # go north, turn left
-    ('pharmacy','icu'): [                                              # BLUE→YELLOW
-        (-S,0.0,INTO),(0.0,-1.0,T90),(-S,0.0,CORR),                  # back to corridor facing south
-        (0.0,1.0,T180),(S,0.0,CORR),(0.0,-1.0,T90),(S,0.0,INTO)],   # go north, turn right
-    ('pharmacy','ward'): [                                             # BLUE→GREEN
-        (-S,0.0,INTO),(0.0,-1.0,T90),(-S,0.0,CORR),                  # back to corridor facing south
-        (S,0.0,CORR),(0.0,-1.0,T90),(S,0.0,INTO)],                   # go south, turn right
+# TO CENTER: exact reverse
+# From ICU (entered facing NORTH):
+#   go back SOUTH NS, turn RIGHT→EAST, go back WEST EW, face EAST done
+TO_CENTER = {
+    'icu':       [(-S,0.0,NS), (0.0,-1.0,T90), (-S,0.0,EW)],
+    'pharmacy':  [(-S,0.0,NS), (0.0, 1.0,T90), (-S,0.0,EW)],
+    'reception': [(-S,0.0,NS), (0.0, 1.0,T90), (-S,0.0,EW), (0.0,-1.0,T180)],
+    'ward':      [(-S,0.0,NS), (0.0,-1.0,T90), (-S,0.0,EW), (0.0,-1.0,T180)],
 }
 
 NLU_PROMPT = """Hospital robot. Return ONLY JSON.
@@ -109,9 +70,9 @@ NLU_PROMPT = """Hospital robot. Return ONLY JSON.
 "go to ward" or "ward" or "green" → {"action":"navigate","zone":"ward"}
 "forward" or "go forward" → {"action":"move","linear":0.3,"angular":0.0,"duration":3.0}
 "backward" or "go back" → {"action":"move","linear":-0.3,"angular":0.0,"duration":3.0}
-"turn left" or "left" → {"action":"move","linear":0.0,"angular":1.0,"duration":1.6}
-"turn right" or "right" → {"action":"move","linear":0.0,"angular":-1.0,"duration":1.6}
-"spin" or "rotate" → {"action":"move","linear":0.0,"angular":1.0,"duration":6.3}
+"turn left" → {"action":"move","linear":0.0,"angular":1.0,"duration":1.6}
+"turn right" → {"action":"move","linear":0.0,"angular":-1.0,"duration":1.6}
+"spin" → {"action":"move","linear":0.0,"angular":1.0,"duration":6.3}
 "stop" or "halt" → {"action":"stop"}
 anything else → {"action":"unknown"}
 Return ONLY the JSON."""
@@ -176,18 +137,19 @@ class VoiceControlNode(Node):
 
     def _navigate_to_zone(self, dst):
         dst = dst.lower().strip()
-        zones = ['reception','icu','ward','pharmacy']
-        if dst not in zones:
+        if dst not in FROM_CENTER:
             self.get_logger().warn(f'Unknown: {dst}'); return
         if self.current_zone == dst:
             self.get_logger().info(f'Already at {dst.upper()}')
             self.navigating = False; return
-        key = (self.current_zone, dst)
-        if key not in PATHS:
-            self.get_logger().warn(f'No path: {key}'); return
         self.navigating = True
-        self.get_logger().info(f'=== {self.current_zone.upper()} → {dst.upper()} ===')
-        self._run_sequence(PATHS[key])
+        if self.current_zone in TO_CENTER:
+            self.get_logger().info(f'=== {self.current_zone.upper()} → CENTER ===')
+            self._run_sequence(TO_CENTER[self.current_zone])
+            if not self.navigating: return
+            time.sleep(0.3)
+        self.get_logger().info(f'=== CENTER → {dst.upper()} ===')
+        self._run_sequence(FROM_CENTER[dst])
         if self.navigating:
             self.current_zone = dst
             self.get_logger().info(f'=== Arrived at {dst.upper()} ===')
