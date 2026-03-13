@@ -26,7 +26,6 @@ setup(
     entry_points={
         'console_scripts': [
             'voice_control = turtlebot_vrc.voice_control:main',
-            'map_explorer = turtlebot_vrc.map_explorer:main',
         ],
     },
 )
