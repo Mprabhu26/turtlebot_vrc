@@ -9,7 +9,7 @@ def generate_launch_description():
     pkg_path     = get_package_share_directory('turtlebot_vrc')
     gazebo_ros   = get_package_share_directory('gazebo_ros')
     turtlebot3_gazebo = get_package_share_directory('turtlebot3_gazebo')
-    world_file   = os.path.join(pkg_path, 'worlds', 'hospital_vrc.world')
+    world_file   = os.path.join(pkg_path, 'worlds', 'hospital.world')
 
     return LaunchDescription([
         SetEnvironmentVariable('TURTLEBOT3_MODEL', 'burger'),
@@ -30,7 +30,7 @@ def generate_launch_description():
                 '-entity', 'turtlebot3',
                 '-file', os.path.join(turtlebot3_gazebo, 'models',
                                       'turtlebot3_burger', 'model.sdf'),
-                '-x', '0', '-y', '0', '-z', '0.01',
+                '-x', '-8', '-y', '-3', '-z', '0.01',
             ],
             output='screen',
         ),
