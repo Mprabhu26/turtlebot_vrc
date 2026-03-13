@@ -11,84 +11,114 @@ import io, os, re, json
 SAMPLE_RATE = 16000
 CHUNK_SAMPLES = int(SAMPLE_RATE * 3.0)
 
-# CONFIRMED FROM TOP-DOWN SCREENSHOT:
-# Robot spawns in corridor facing SOUTH (-Y)
-# Corridor is VERTICAL
-# RED=ICU        top-LEFT   → go NORTH, turn LEFT  (face WEST,  enter)
-# YELLOW=WARD    top-RIGHT  → go NORTH, turn RIGHT (face EAST,  enter)
-# GREEN=PHARMACY bottom-LEFT  → go SOUTH, turn RIGHT (face WEST, enter)
-# BLUE=RECEPTION bottom-RIGHT → go SOUTH, turn LEFT  (face EAST, enter)
+# CONFIRMED LAYOUT (top-down view):
+# RED    = top-left     = reception
+# YELLOW = top-right    = icu
+# GREEN  = bottom-left  = ward
+# BLUE   = bottom-right = pharmacy
 #
-# Speed 0.3m/s
-# From screenshot: blocks are ~4 grid squares from center corridor gap
-# Each grid square = 1m
-# Corridor to block center: ~5m = 17s at 0.3m/s
-# Into room: ~3m = 10s at 0.3m/s
-# 90deg turn at 1.0rad/s = 1.57s ≈ 1.6s
-# 180deg = 3.2s
-
-S    = 0.3
-T90  = 1.6
-T180 = 3.2
-CORR = 17.0  # along corridor to room gap
-INTO = 10.0  # into room
-
 # Robot faces SOUTH at spawn
-# NORTH = turn 180deg first, then forward
-# SOUTH = forward directly
-# LEFT turn from NORTH = turn LEFT = angular +
-# RIGHT turn from NORTH = turn RIGHT = angular -
+# S=0.3m/s, T90=1.6s turn 90deg, T180=3.2s turn 180deg
+# CORR=17s along corridor, INTO=10s into room
 
-FROM_CENTER = {
-    # ICU (red, top-left): turn NORTH, go up corridor, turn LEFT (west), enter
-    'icu':       [(0.0, 1.0, T180),  # face NORTH
-                  (S,   0.0, CORR),   # go NORTH along corridor
-                  (0.0, 1.0, T90),    # turn LEFT → face WEST
-                  (S,   0.0, INTO)],  # enter ICU
+S=0.3; T90=1.6; T180=3.2; CORR=17.0; INTO=10.0
 
-    # WARD (yellow, top-right): turn NORTH, go up corridor, turn RIGHT (east), enter
-    'ward':      [(0.0, 1.0, T180),  # face NORTH
-                  (S,   0.0, CORR),   # go NORTH along corridor
-                  (0.0,-1.0, T90),    # turn RIGHT → face EAST
-                  (S,   0.0, INTO)],  # enter WARD
+# Building blocks:
+# go_north  = turn 180 (face north) then go CORR
+# go_south  = go CORR (already facing south)
+# turn_left_enter  = turn left then INTO
+# turn_right_enter = turn right then INTO
+# exit_north_left  = reverse INTO, turn right, reverse CORR, turn 180 (back to center facing south)
+# exit_north_right = reverse INTO, turn left,  reverse CORR, turn 180
+# exit_south_left  = reverse INTO, turn right, reverse CORR
+# exit_south_right = reverse INTO, turn left,  reverse CORR
 
-    # PHARMACY (green, bottom-left): already facing SOUTH, go down, turn LEFT (east... wait WEST)
-    # Facing SOUTH, turn RIGHT = face WEST
-    'pharmacy':  [(S,   0.0, CORR),   # go SOUTH along corridor
-                  (0.0,-1.0, T90),    # turn LEFT from SOUTH perspective = face EAST? 
-                  # Actually: facing SOUTH, turn RIGHT (angular -) = face WEST
-                  (S,   0.0, INTO)],  # enter PHARMACY
+# DIRECT PATHS — hardcoded for every combination
+PATHS = {
+    # ── FROM CENTER ──────────────────────────────────────────────
+    ('center','reception'): [
+        (0.0, 1.0,T180),(S,0.0,CORR),(0.0,1.0,T90),(S,0.0,INTO)],   # N then left→RED
+    ('center','icu'): [
+        (0.0,1.0,T180),(S,0.0,CORR),(0.0,-1.0,T90),(S,0.0,INTO)],   # N then right→YELLOW
+    ('center','ward'): [
+        (S,0.0,CORR),(0.0,-1.0,T90),(S,0.0,INTO)],                   # S then right→GREEN
+    ('center','pharmacy'): [
+        (S,0.0,CORR),(0.0,1.0,T90),(S,0.0,INTO)],                    # S then left→BLUE
 
-    # RECEPTION (blue, bottom-right): facing SOUTH, go down, turn LEFT = face EAST
-    'reception': [(S,   0.0, CORR),   # go SOUTH along corridor
-                  (0.0, 1.0, T90),    # turn LEFT from SOUTH = face EAST
-                  (S,   0.0, INTO)],  # enter RECEPTION
-}
+    # ── FROM RECEPTION (RED, top-left, entered facing WEST) ──────
+    # Exit: back east INTO, turn south (right), back CORR north, turn south (face south=center)
+    ('reception','center'): [
+        (-S,0.0,INTO),(0.0,-1.0,T90),(-S,0.0,CORR),(0.0,1.0,T180)],
+    ('reception','icu'): [                                             # RED→YELLOW: exit to center, go to icu
+        (-S,0.0,INTO),(0.0,-1.0,T90),(-S,0.0,CORR),                  # back to corridor facing south
+        (0.0,1.0,T180),(S,0.0,CORR),(0.0,-1.0,T90),(S,0.0,INTO)],   # go north, turn right
+    ('reception','ward'): [                                            # RED→GREEN
+        (-S,0.0,INTO),(0.0,-1.0,T90),(-S,0.0,CORR),                  # back to corridor facing south
+        (S,0.0,CORR),(0.0,-1.0,T90),(S,0.0,INTO)],                   # go south, turn right
+    ('reception','pharmacy'): [                                        # RED→BLUE
+        (-S,0.0,INTO),(0.0,-1.0,T90),(-S,0.0,CORR),                  # back to corridor facing south
+        (S,0.0,CORR),(0.0,1.0,T90),(S,0.0,INTO)],                    # go south, turn left
 
-TO_CENTER = {
-    'icu':       [(-S,  0.0, INTO), (0.0,-1.0, T90), (-S, 0.0, CORR), (0.0,-1.0, T180)],
-    'ward':      [(-S,  0.0, INTO), (0.0, 1.0, T90), (-S, 0.0, CORR), (0.0,-1.0, T180)],
-    'pharmacy':  [(-S,  0.0, INTO), (0.0, 1.0, T90), (-S, 0.0, CORR)],
-    'reception': [(-S,  0.0, INTO), (0.0,-1.0, T90), (-S, 0.0, CORR)],
+    # ── FROM ICU (YELLOW, top-right, entered facing EAST) ────────
+    # Exit: back west INTO, turn south (left), back CORR, now facing south
+    ('icu','center'): [
+        (-S,0.0,INTO),(0.0,1.0,T90),(-S,0.0,CORR),(0.0,1.0,T180)],
+    ('icu','reception'): [                                             # YELLOW→RED
+        (-S,0.0,INTO),(0.0,1.0,T90),(-S,0.0,CORR),                   # back to corridor facing south
+        (0.0,1.0,T180),(S,0.0,CORR),(0.0,1.0,T90),(S,0.0,INTO)],    # go north, turn left
+    ('icu','ward'): [                                                  # YELLOW→GREEN
+        (-S,0.0,INTO),(0.0,1.0,T90),(-S,0.0,CORR),                   # back to corridor facing south
+        (S,0.0,CORR),(0.0,-1.0,T90),(S,0.0,INTO)],                   # go south, turn right
+    ('icu','pharmacy'): [                                              # YELLOW→BLUE
+        (-S,0.0,INTO),(0.0,1.0,T90),(-S,0.0,CORR),                   # back to corridor facing south
+        (S,0.0,CORR),(0.0,1.0,T90),(S,0.0,INTO)],                    # go south, turn left
+
+    # ── FROM WARD (GREEN, bottom-left, entered facing WEST) ──────
+    # Exit: back east INTO, turn north (left), back CORR south, now facing south
+    ('ward','center'): [
+        (-S,0.0,INTO),(0.0,1.0,T90),(-S,0.0,CORR)],
+    ('ward','reception'): [                                            # GREEN→RED
+        (-S,0.0,INTO),(0.0,1.0,T90),(-S,0.0,CORR),                   # back to corridor facing south
+        (0.0,1.0,T180),(S,0.0,CORR),(0.0,1.0,T90),(S,0.0,INTO)],    # go north, turn left
+    ('ward','icu'): [                                                  # GREEN→YELLOW
+        (-S,0.0,INTO),(0.0,1.0,T90),(-S,0.0,CORR),                   # back to corridor facing south
+        (0.0,1.0,T180),(S,0.0,CORR),(0.0,-1.0,T90),(S,0.0,INTO)],   # go north, turn right
+    ('ward','pharmacy'): [                                             # GREEN→BLUE
+        (-S,0.0,INTO),(0.0,1.0,T90),(-S,0.0,CORR),                   # back to corridor facing south
+        (S,0.0,CORR),(0.0,1.0,T90),(S,0.0,INTO)],                    # go south, turn left
+
+    # ── FROM PHARMACY (BLUE, bottom-right, entered facing EAST) ──
+    # Exit: back west INTO, turn north (right), back CORR south, now facing south
+    ('pharmacy','center'): [
+        (-S,0.0,INTO),(0.0,-1.0,T90),(-S,0.0,CORR)],
+    ('pharmacy','reception'): [                                        # BLUE→RED
+        (-S,0.0,INTO),(0.0,-1.0,T90),(-S,0.0,CORR),                  # back to corridor facing south
+        (0.0,1.0,T180),(S,0.0,CORR),(0.0,1.0,T90),(S,0.0,INTO)],    # go north, turn left
+    ('pharmacy','icu'): [                                              # BLUE→YELLOW
+        (-S,0.0,INTO),(0.0,-1.0,T90),(-S,0.0,CORR),                  # back to corridor facing south
+        (0.0,1.0,T180),(S,0.0,CORR),(0.0,-1.0,T90),(S,0.0,INTO)],   # go north, turn right
+    ('pharmacy','ward'): [                                             # BLUE→GREEN
+        (-S,0.0,INTO),(0.0,-1.0,T90),(-S,0.0,CORR),                  # back to corridor facing south
+        (S,0.0,CORR),(0.0,-1.0,T90),(S,0.0,INTO)],                   # go south, turn right
 }
 
 NLU_PROMPT = """Hospital robot. Return ONLY JSON.
-"go to ICU" or "ICU" or "red" → {"action":"navigate","zone":"icu"}
-"go to ward" or "ward" or "yellow" → {"action":"navigate","zone":"ward"}
-"go to pharmacy" or "pharmacy" or "green" → {"action":"navigate","zone":"pharmacy"}
-"go to reception" or "reception" or "blue" → {"action":"navigate","zone":"reception"}
-"forward" → {"action":"move","linear":0.3,"angular":0.0,"duration":3.0}
-"backward" or "back" → {"action":"move","linear":-0.3,"angular":0.0,"duration":3.0}
+"go to ICU" or "ICU" or "yellow" → {"action":"navigate","zone":"icu"}
+"go to pharmacy" or "pharmacy" or "blue" → {"action":"navigate","zone":"pharmacy"}
+"go to reception" or "reception" or "red" → {"action":"navigate","zone":"reception"}
+"go to ward" or "ward" or "green" → {"action":"navigate","zone":"ward"}
+"forward" or "go forward" → {"action":"move","linear":0.3,"angular":0.0,"duration":3.0}
+"backward" or "go back" → {"action":"move","linear":-0.3,"angular":0.0,"duration":3.0}
 "turn left" or "left" → {"action":"move","linear":0.0,"angular":1.0,"duration":1.6}
 "turn right" or "right" → {"action":"move","linear":0.0,"angular":-1.0,"duration":1.6}
-"spin" → {"action":"move","linear":0.0,"angular":1.0,"duration":6.3}
+"spin" or "rotate" → {"action":"move","linear":0.0,"angular":1.0,"duration":6.3}
 "stop" or "halt" → {"action":"stop"}
 anything else → {"action":"unknown"}
 Return ONLY the JSON."""
 
 NOISE = {'gracias','merci','danke','okay','ok','thank you','thanks','yes','no',
          'hmm','uh','um','ah','bye','hello','hi','obrigado','yeah','sure',
-         'right','word','vogue','world','fallen','go to','reception.'}
+         'word','vogue','world','fallen','go to'}
 
 class VoiceControlNode(Node):
     def __init__(self):
@@ -133,14 +163,12 @@ class VoiceControlNode(Node):
     def _run_sequence(self, steps):
         for lin, ang, dur in steps:
             if not self.navigating:
-                self._stop()
-                return
+                self._stop(); return
             self.get_logger().info(f'  lin={lin:.1f} ang={ang:.1f} dur={dur:.1f}s')
             end = time.time() + dur
             while time.time() < end:
                 if not self.navigating:
-                    self._stop()
-                    return
+                    self._stop(); return
                 self._pub(lin, ang)
                 time.sleep(0.05)
             self._stop()
@@ -148,22 +176,18 @@ class VoiceControlNode(Node):
 
     def _navigate_to_zone(self, dst):
         dst = dst.lower().strip()
-        if dst not in FROM_CENTER:
-            self.get_logger().warn(f'Unknown: {dst}')
-            return
+        zones = ['reception','icu','ward','pharmacy']
+        if dst not in zones:
+            self.get_logger().warn(f'Unknown: {dst}'); return
         if self.current_zone == dst:
             self.get_logger().info(f'Already at {dst.upper()}')
-            self.navigating = False
-            return
+            self.navigating = False; return
+        key = (self.current_zone, dst)
+        if key not in PATHS:
+            self.get_logger().warn(f'No path: {key}'); return
         self.navigating = True
-        if self.current_zone in TO_CENTER:
-            self.get_logger().info(f'=== {self.current_zone.upper()} → CENTER ===')
-            self._run_sequence(TO_CENTER[self.current_zone])
-            if not self.navigating:
-                return
-            time.sleep(0.3)
-        self.get_logger().info(f'=== CENTER → {dst.upper()} ===')
-        self._run_sequence(FROM_CENTER[dst])
+        self.get_logger().info(f'=== {self.current_zone.upper()} → {dst.upper()} ===')
+        self._run_sequence(PATHS[key])
         if self.navigating:
             self.current_zone = dst
             self.get_logger().info(f'=== Arrived at {dst.upper()} ===')
@@ -189,24 +213,19 @@ class VoiceControlNode(Node):
             raw = re.sub(r'```json|```','',resp.choices[0].message.content.strip()).strip()
             return json.loads(raw)
         except Exception as e:
-            self.get_logger().warn(f'NLU: {e}')
-            return None
+            self.get_logger().warn(f'NLU: {e}'); return None
 
     def _dispatch(self, text):
         t = text.lower().strip().rstrip('.')
-        if len(t) < 4:
-            return
-        if t in NOISE or t.replace('.','').strip() in NOISE:
-            return
+        if len(t) < 4: return
+        if t in NOISE or t.replace('.','').strip() in NOISE: return
         self.get_logger().info(f'Processing: "{text}"')
         cmd = self._groq_nlu(text)
-        if not cmd:
-            return
+        if not cmd: return
         self.get_logger().info(f'NLU: {cmd}')
         action = cmd.get('action','unknown')
         if action == 'stop':
-            self.navigating = False
-            self._stop()
+            self.navigating = False; self._stop()
             self.get_logger().info('STOPPED')
         elif action == 'navigate':
             zone = cmd.get('zone','')
@@ -237,22 +256,18 @@ class VoiceControlNode(Node):
             try:
                 segs, _ = self.fw_model.transcribe(audio_np.astype(np.float32), language='en')
                 text = ' '.join(s.text for s in segs).strip()
-                if text:
-                    return text
-            except Exception as e:
-                self.get_logger().warn(f'fw: {e}')
+                if text: return text
+            except: pass
         return ''
 
     def _has_speech(self, audio_np):
-        if self.vad_model is None:
-            return True
+        if self.vad_model is None: return True
         try:
             import torch
             conf = self.vad_model(torch.from_numpy(audio_np.astype(np.float32)), SAMPLE_RATE).item()
             self.get_logger().info(f'VAD: {conf*100:.0f}%')
             return conf > 0.7
-        except Exception:
-            return True
+        except: return True
 
     def _listen_loop(self):
         device_index = None
@@ -262,19 +277,16 @@ class VoiceControlNode(Node):
                     device_index = i
                     self.get_logger().info(f'Audio device {i}: {d["name"]}')
                     break
-        except Exception:
-            pass
+        except: pass
         while rclpy.ok():
             try:
                 audio = sd.rec(CHUNK_SAMPLES, samplerate=SAMPLE_RATE,
                                channels=1, dtype='float32', device=device_index)
                 sd.wait()
                 audio_np = np.clip(audio.flatten() * 3.0, -1.0, 1.0)
-                if not self._has_speech(audio_np):
-                    continue
+                if not self._has_speech(audio_np): continue
                 text = self._transcribe(audio_np)
-                if not text or len(text) < 3:
-                    continue
+                if not text or len(text) < 3: continue
                 self._dispatch(text)
             except Exception as e:
                 self.get_logger().error(f'Error: {e}')
