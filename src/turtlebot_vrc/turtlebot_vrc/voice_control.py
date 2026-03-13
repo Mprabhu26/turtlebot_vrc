@@ -11,56 +11,84 @@ import io, os, re, json
 SAMPLE_RATE = 16000
 CHUNK_SAMPLES = int(SAMPLE_RATE * 3.0)
 
-# Speed: 0.3m/s → 6m=20s, 4m=13s
-# Turn 90° at 1.0rad/s = 1.6s, 180° = 3.2s
-# Robot at (0,0) facing EAST (+X)
+# CONFIRMED FROM TOP-DOWN SCREENSHOT:
+# Robot spawns in corridor facing SOUTH (-Y)
+# Corridor is VERTICAL
+# RED=ICU        top-LEFT   → go NORTH, turn LEFT  (face WEST,  enter)
+# YELLOW=WARD    top-RIGHT  → go NORTH, turn RIGHT (face EAST,  enter)
+# GREEN=PHARMACY bottom-LEFT  → go SOUTH, turn RIGHT (face WEST, enter)
+# BLUE=RECEPTION bottom-RIGHT → go SOUTH, turn LEFT  (face EAST, enter)
 #
-# GREEN=PHARMACY  (-6,+6) → face WEST, go 20s, turn NORTH, go 13s
-# RED=ICU         (+6,+6) → face EAST, go 20s, turn NORTH, go 13s  
-# BLUE=RECEPTION  (-6,-6) → face WEST, go 20s, turn SOUTH, go 13s
-# YELLOW=WARD     (+6,-6) → face EAST, go 20s, turn SOUTH, go 13s
+# Speed 0.3m/s
+# From screenshot: blocks are ~4 grid squares from center corridor gap
+# Each grid square = 1m
+# Corridor to block center: ~5m = 17s at 0.3m/s
+# Into room: ~3m = 10s at 0.3m/s
+# 90deg turn at 1.0rad/s = 1.57s ≈ 1.6s
+# 180deg = 3.2s
 
-S = 0.3   # linear speed
-T90 = 1.6 # time for 90deg turn at 1.0 rad/s
+S    = 0.3
+T90  = 1.6
 T180 = 3.2
-EAST = 20.0   # 6m at 0.3m/s
-INTO = 13.0   # 4m at 0.3m/s
+CORR = 17.0  # along corridor to room gap
+INTO = 10.0  # into room
 
-# FROM CENTER (robot facing EAST):
+# Robot faces SOUTH at spawn
+# NORTH = turn 180deg first, then forward
+# SOUTH = forward directly
+# LEFT turn from NORTH = turn LEFT = angular +
+# RIGHT turn from NORTH = turn RIGHT = angular -
+
 FROM_CENTER = {
-    'icu':       [(S,  0.0, EAST), (0.0,  1.0, T90), (S, 0.0, INTO)],
-    'ward':      [(S,  0.0, EAST), (0.0, -1.0, T90), (S, 0.0, INTO)],
-    'pharmacy':  [(0.0, 1.0, T180), (S, 0.0, EAST), (0.0, 1.0, T90), (S, 0.0, INTO)],
-    'reception': [(0.0, 1.0, T180), (S, 0.0, EAST), (0.0,-1.0, T90), (S, 0.0, INTO)],
+    # ICU (red, top-left): turn NORTH, go up corridor, turn LEFT (west), enter
+    'icu':       [(0.0, 1.0, T180),  # face NORTH
+                  (S,   0.0, CORR),   # go NORTH along corridor
+                  (0.0, 1.0, T90),    # turn LEFT → face WEST
+                  (S,   0.0, INTO)],  # enter ICU
+
+    # WARD (yellow, top-right): turn NORTH, go up corridor, turn RIGHT (east), enter
+    'ward':      [(0.0, 1.0, T180),  # face NORTH
+                  (S,   0.0, CORR),   # go NORTH along corridor
+                  (0.0,-1.0, T90),    # turn RIGHT → face EAST
+                  (S,   0.0, INTO)],  # enter WARD
+
+    # PHARMACY (green, bottom-left): already facing SOUTH, go down, turn LEFT (east... wait WEST)
+    # Facing SOUTH, turn RIGHT = face WEST
+    'pharmacy':  [(S,   0.0, CORR),   # go SOUTH along corridor
+                  (0.0,-1.0, T90),    # turn LEFT from SOUTH perspective = face EAST? 
+                  # Actually: facing SOUTH, turn RIGHT (angular -) = face WEST
+                  (S,   0.0, INTO)],  # enter PHARMACY
+
+    # RECEPTION (blue, bottom-right): facing SOUTH, go down, turn LEFT = face EAST
+    'reception': [(S,   0.0, CORR),   # go SOUTH along corridor
+                  (0.0, 1.0, T90),    # turn LEFT from SOUTH = face EAST
+                  (S,   0.0, INTO)],  # enter RECEPTION
 }
 
-# TO CENTER (reverse of FROM_CENTER exactly):
 TO_CENTER = {
-    'icu':       [(-S, 0.0, INTO), (0.0, -1.0, T90), (-S, 0.0, EAST)],
-    'ward':      [(-S, 0.0, INTO), (0.0,  1.0, T90), (-S, 0.0, EAST)],
-    'pharmacy':  [(-S, 0.0, INTO), (0.0, -1.0, T90), (-S, 0.0, EAST), (0.0, -1.0, T180)],
-    'reception': [(-S, 0.0, INTO), (0.0,  1.0, T90), (-S, 0.0, EAST), (0.0, -1.0, T180)],
+    'icu':       [(-S,  0.0, INTO), (0.0,-1.0, T90), (-S, 0.0, CORR), (0.0,-1.0, T180)],
+    'ward':      [(-S,  0.0, INTO), (0.0, 1.0, T90), (-S, 0.0, CORR), (0.0,-1.0, T180)],
+    'pharmacy':  [(-S,  0.0, INTO), (0.0, 1.0, T90), (-S, 0.0, CORR)],
+    'reception': [(-S,  0.0, INTO), (0.0,-1.0, T90), (-S, 0.0, CORR)],
 }
-
-ZONES = list(FROM_CENTER.keys())
 
 NLU_PROMPT = """Hospital robot. Return ONLY JSON.
-"go to ICU" or "ICU" or "red room" → {"action":"navigate","zone":"icu"}
-"go to ward" or "ward" or "yellow room" → {"action":"navigate","zone":"ward"}
-"go to pharmacy" or "pharmacy" or "green room" → {"action":"navigate","zone":"pharmacy"}
-"go to reception" or "reception" or "blue room" → {"action":"navigate","zone":"reception"}
-"go forward" or "forward" or "ahead" → {"action":"move","linear":0.3,"angular":0.0,"duration":3.0}
-"go back" or "backward" or "reverse" → {"action":"move","linear":-0.3,"angular":0.0,"duration":3.0}
+"go to ICU" or "ICU" or "red" → {"action":"navigate","zone":"icu"}
+"go to ward" or "ward" or "yellow" → {"action":"navigate","zone":"ward"}
+"go to pharmacy" or "pharmacy" or "green" → {"action":"navigate","zone":"pharmacy"}
+"go to reception" or "reception" or "blue" → {"action":"navigate","zone":"reception"}
+"forward" → {"action":"move","linear":0.3,"angular":0.0,"duration":3.0}
+"backward" or "back" → {"action":"move","linear":-0.3,"angular":0.0,"duration":3.0}
 "turn left" or "left" → {"action":"move","linear":0.0,"angular":1.0,"duration":1.6}
 "turn right" or "right" → {"action":"move","linear":0.0,"angular":-1.0,"duration":1.6}
-"spin" or "rotate" → {"action":"move","linear":0.0,"angular":1.0,"duration":6.3}
+"spin" → {"action":"move","linear":0.0,"angular":1.0,"duration":6.3}
 "stop" or "halt" → {"action":"stop"}
 anything else → {"action":"unknown"}
 Return ONLY the JSON."""
 
 NOISE = {'gracias','merci','danke','okay','ok','thank you','thanks','yes','no',
          'hmm','uh','um','ah','bye','hello','hi','obrigado','yeah','sure',
-         'right','word','vogue','world','fallen','продолжение следует'}
+         'right','word','vogue','world','fallen','go to','reception.'}
 
 class VoiceControlNode(Node):
     def __init__(self):
@@ -116,7 +144,7 @@ class VoiceControlNode(Node):
                 self._pub(lin, ang)
                 time.sleep(0.05)
             self._stop()
-            time.sleep(0.2)
+            time.sleep(0.15)
 
     def _navigate_to_zone(self, dst):
         dst = dst.lower().strip()
@@ -128,14 +156,12 @@ class VoiceControlNode(Node):
             self.navigating = False
             return
         self.navigating = True
-        # Return to center first if in a room
         if self.current_zone in TO_CENTER:
             self.get_logger().info(f'=== {self.current_zone.upper()} → CENTER ===')
             self._run_sequence(TO_CENTER[self.current_zone])
             if not self.navigating:
                 return
             time.sleep(0.3)
-        # Go to destination
         self.get_logger().info(f'=== CENTER → {dst.upper()} ===')
         self._run_sequence(FROM_CENTER[dst])
         if self.navigating:
