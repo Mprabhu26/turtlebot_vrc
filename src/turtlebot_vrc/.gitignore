@@ -1,0 +1,22 @@
+# Windows Zone Identifier files
+*:Zone.Identifier
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# ROS2 build artifacts
+build/
+install/
+log/
+
+# Large model files
+*.zip
+*.tar.gz
+*.bin
+
+# OS files
+.DS_Store
+Thumbs.db
