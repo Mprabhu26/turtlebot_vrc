@@ -1,30 +1,24 @@
 <?xml version="1.0"?>
 <sdf version="1.6">
   <world name="hospital">
-
     <include><uri>model://ground_plane</uri></include>
     <include><uri>model://sun</uri></include>
-
     <physics type="ode">
       <real_time_update_rate>1000</real_time_update_rate>
       <max_step_size>0.001</max_step_size>
     </physics>
-
     <!--
       NAVIGATION LAYOUT — matches voice_control.py exactly
       Robot spawns at (0,0) facing EAST (+X)
-
       NW: RECEPTION  (-6, +6)  — orange  (VISUAL ONLY - NO COLLISION)
       NE: ICU        (+6, +6)  — yellow  (VISUAL ONLY - NO COLLISION)
       SW: WARD       (-6, -6)  — blue    (VISUAL ONLY - NO COLLISION)
       SE: PHARMACY   (+6, -6)  — green   (VISUAL ONLY - NO COLLISION)
-
       Corridor along y=0, walls at y=+2 and y=-2
       Gaps at x=-6 and x=+6 (2m wide) for room entry
       
       IMPORTANT: Colored room markers have NO COLLISION - robot can drive through them freely
     -->
-
     <!-- RECEPTION (NW) — orange — VISUAL ONLY, NO COLLISION -->
     <model name="RECEPTION">
       <static>true</static>
@@ -37,7 +31,6 @@
         <!-- NO COLLISION TAG - robot drives through -->
       </link>
     </model>
-
     <!-- ICU (NE) — yellow — VISUAL ONLY, NO COLLISION -->
     <model name="ICU">
       <static>true</static>
@@ -50,7 +43,6 @@
         <!-- NO COLLISION TAG - robot drives through -->
       </link>
     </model>
-
     <!-- WARD (SW) — blue — VISUAL ONLY, NO COLLISION -->
     <model name="WARD">
       <static>true</static>
@@ -63,7 +55,6 @@
         <!-- NO COLLISION TAG - robot drives through -->
       </link>
     </model>
-
     <!-- PHARMACY (SE) — green — VISUAL ONLY, NO COLLISION -->
     <model name="PHARMACY">
       <static>true</static>
@@ -76,9 +67,7 @@
         <!-- NO COLLISION TAG - robot drives through -->
       </link>
     </model>
-
     <!-- CORRIDOR WALLS at y=+2 and y=-2 (these HAVE collision) -->
-
     <!-- North wall west segment: x=-10 to x=-7 -->
     <model name="wall_n_west">
       <static>true</static>
@@ -93,7 +82,6 @@
         </collision>
       </link>
     </model>
-
     <!-- North wall centre segment: x=-5 to x=+5 -->
     <model name="wall_n_centre">
       <static>true</static>
@@ -108,7 +96,6 @@
         </collision>
       </link>
     </model>
-
     <!-- North wall east segment: x=+7 to x=+10 -->
     <model name="wall_n_east">
       <static>true</static>
@@ -123,7 +110,6 @@
         </collision>
       </link>
     </model>
-
     <!-- South wall west segment: x=-10 to x=-7 -->
     <model name="wall_s_west">
       <static>true</static>
@@ -138,7 +124,6 @@
         </collision>
       </link>
     </model>
-
     <!-- South wall centre segment: x=-5 to x=+5 -->
     <model name="wall_s_centre">
       <static>true</static>
@@ -153,7 +138,6 @@
         </collision>
       </link>
     </model>
-
     <!-- South wall east segment: x=+7 to x=+10 -->
     <model name="wall_s_east">
       <static>true</static>
@@ -168,7 +152,6 @@
         </collision>
       </link>
     </model>
-
     <!-- Corridor floor (visual only, no collision) -->
     <model name="corridor_floor">
       <static>true</static>
@@ -181,6 +164,62 @@
         <!-- NO COLLISION TAG - just a visual floor marker -->
       </link>
     </model>
-
+    <!-- BOUNDARY WALLS — prevent robot escaping the map -->
+    <!-- East boundary wall (x=+11) — full height spans corridor + rooms -->
+    <model name="wall_east_boundary">
+      <static>true</static>
+      <pose>11 0 0.5 0 0 0</pose>
+      <link name="body">
+        <visual name="v">
+          <geometry><box><size>0.2 22 1</size></box></geometry>
+          <material><ambient>0.5 0.5 0.5 1</ambient></material>
+        </visual>
+        <collision name="c">
+          <geometry><box><size>0.2 22 1</size></box></geometry>
+        </collision>
+      </link>
+    </model>
+    <!-- West boundary wall (x=-11) -->
+    <model name="wall_west_boundary">
+      <static>true</static>
+      <pose>-11 0 0.5 0 0 0</pose>
+      <link name="body">
+        <visual name="v">
+          <geometry><box><size>0.2 22 1</size></box></geometry>
+          <material><ambient>0.5 0.5 0.5 1</ambient></material>
+        </visual>
+        <collision name="c">
+          <geometry><box><size>0.2 22 1</size></box></geometry>
+        </collision>
+      </link>
+    </model>
+    <!-- North boundary wall (y=+11) -->
+    <model name="wall_north_boundary">
+      <static>true</static>
+      <pose>0 11 0.5 0 0 0</pose>
+      <link name="body">
+        <visual name="v">
+          <geometry><box><size>22 0.2 1</size></box></geometry>
+          <material><ambient>0.5 0.5 0.5 1</ambient></material>
+        </visual>
+        <collision name="c">
+          <geometry><box><size>22 0.2 1</size></box></geometry>
+        </collision>
+      </link>
+    </model>
+    <!-- South boundary wall (y=-11) -->
+    <model name="wall_south_boundary">
+      <static>true</static>
+      <pose>0 -11 0.5 0 0 0</pose>
+      <link name="body">
+        <visual name="v">
+          <geometry><box><size>22 0.2 1</size></box></geometry>
+          <material><ambient>0.5 0.5 0.5 1</ambient></material>
+        </visual>
+        <collision name="c">
+          <geometry><box><size>22 0.2 1</size></box></geometry>
+        </collision>
+      </link>
+    </model>
   </world>
 </sdf>
