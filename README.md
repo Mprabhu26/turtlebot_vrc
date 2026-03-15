@@ -36,6 +36,7 @@
 - [Known Limitations](#known-limitations)
 - [Contributors](#contributors)
 - [Acknowledgements](#acknowledgements)
+- [References](#references)
 
 ---
 
@@ -143,7 +144,7 @@ pip install groq faster-whisper sounddevice soundfile numpy torch
 
 ### Groq API Key
 
-A free API key is required for Groq Whisper transcription and LLaMA NLU.
+A free API key is recommended for enhanced transcription (Groq Whisper) and intelligent NLU (Groq LLaMA). Without it, the system falls back to local faster-whisper and regex-based NLU.
 Get one at [console.groq.com](https://console.groq.com).
 
 > **Note:** The Groq free tier allows ~30 requests/minute. The system minimises API calls — local NLU handles standard commands without any API usage, and Groq is only called for unclear or accented speech.
@@ -394,6 +395,18 @@ ROS2 package manifest declaring build and runtime dependencies: `rclpy`, `geomet
 
 ---
 
+## 📄 Academic Publication
+
+This project is documented in our IEEE conference paper:
+
+> M. Prabhu and R. Rashid, "VRC-7: A Hybrid Local-Cloud AI Pipeline 
+> for Accent-Robust Voice Control of Autonomous Hospital Delivery 
+> Robots in ROS2," *IEEE EUROCON 2025* (under review).
+
+[Download PDF](./docs/Project_Report.pdf)
+
+---
+
 ## Acknowledgements
 
 We would like to express our sincere gratitude to **Prof. Dr. Peter Nauth** for his expert guidance, continuous support, and valuable feedback throughout the development of this project.
@@ -406,6 +419,19 @@ We would like to express our sincere gratitude to **Prof. Dr. Peter Nauth** for 
 | [Gazebo Classic](http://gazebosim.org/) | Robot simulation environment |
 | [Silero VAD](https://github.com/snakers4/silero-vad) | Voice Activity Detection model |
 | [faster-whisper](https://github.com/SYSTRAN/faster-whisper) | Local ASR fallback |
+
+---
+
+
+## References
+
+[1] P. Nauth, G. Schäfer, and M. Detert, "Voice Control for Mobile Robots in Noisy Environments," *Frankfurt University of Applied Sciences Technical Report*, 2025.
+
+[2] A. B. Baker et al., "Accent-Robust Speech Recognition for Human-Robot Interaction," in *IEEE EUROCON 2025*, July 2025.
+
+[3] ROS2 Humble Documentation. [Online]. Available: https://docs.ros.org/en/humble/
+
+[4] Groq API Documentation. [Online]. Available: https://console.groq.com/docs/
 
 ---
 
