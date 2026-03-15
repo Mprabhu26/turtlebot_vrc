@@ -67,42 +67,42 @@ A key design goal was robustness to **accented speech and background noise**. Th
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│                        VOICE INPUT                            │
-│                 Microphone → WSLg PulseAudio                  │
+│                        VOICE INPUT                           │
+│                 Microphone → WSLg PulseAudio                 │
 └───────────────────────────┬──────────────────────────────────┘
                             │  raw audio
                             ▼
 ┌──────────────────────────────────────────────────────────────┐
-│                      AUDIO PIPELINE                           │
+│                      AUDIO PIPELINE                          │
 │   sounddevice InputStream → Energy VAD → Audio Queue         │
 │   (Continuous callback stream — never drops audio)           │
 └───────────────────────────┬──────────────────────────────────┘
                             │  speech chunks (1.5s)
                             ▼
 ┌──────────────────────────────────────────────────────────────┐
-│                      TRANSCRIPTION                            │
-│   Primary : Groq Whisper large-v3-turbo  (cloud, accent-aware)│
-│   Fallback: faster-whisper base          (local, offline)     │
+│                      TRANSCRIPTION                           │
+│   Primary : Groq Whisper large-v3-turbo (cloud, accent-aware)│
+│   Fallback: faster-whisper base         (local, offline)     │
 └───────────────────────────┬──────────────────────────────────┘
                             │  text
                             ▼
 ┌──────────────────────────────────────────────────────────────┐
-│            NATURAL LANGUAGE UNDERSTANDING (NLU)               │
-│   Layer 1: Local regex engine  (instant, zero API calls)      │
+│            NATURAL LANGUAGE UNDERSTANDING (NLU)              │
+│   Layer 1: Local regex engine  (instant, zero API calls)     │
 │   Layer 2: Groq LLaMA 3.3 70B (accents, noise, complex cmds) │
 └───────────────────────────┬──────────────────────────────────┘
                             │  JSON command
                             ▼
 ┌──────────────────────────────────────────────────────────────┐
-│                   ROBOT CONTROLLER (ROS2)                     │
-│   Navigate │ Move Continuous │ Timed Move │ Cardinal Direction │
+│                   ROBOT CONTROLLER (ROS2)                    │
+│   Navigate │ Move Continuous │ Timed Move │Cardinal Direction│
 │   /cmd_vel publisher — odometry + LiDAR feedback             │
 └───────────────────────────┬──────────────────────────────────┘
                             │  /cmd_vel (Twist)
                             ▼
 ┌──────────────────────────────────────────────────────────────┐
-│             GAZEBO SIMULATION — TurtleBot3 Burger             │
-│       /odom (Odometry) ←── Robot ──→ /scan (LiDAR)          │
+│             GAZEBO SIMULATION — TurtleBot3 Burger            │
+│       /odom (Odometry) ←── Robot ──→ /scan (LiDAR)           │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -284,25 +284,27 @@ The simulated hospital consists of a central east-west corridor with 4 colour-co
 | Ward | (-6, -6) | 🔵 Blue | West gap (x=-6) |
 
 ```
-         WEST (−X)               EAST (+X)
-              |                      |
-   ═══════════╪══════════════════════╪═══════
-              │                      │
-   NORTH    RECEPTION            ICU          NORTH
-    (+Y)    (−6, +6)             (+6, +6)      (+Y)
-   🟠 Orange  │      West Gap  East Gap  🟡 Yellow
-              │       (−6,0)    (+6,0)   │
-   ───────────┤─────────────────────────┤──────  y=+2
-              │                          │
-              │        CORRIDOR          │        y=0
-              │         (0, 0)           │
-   ───────────┤─────────────────────────┤──────  y=−2
-              │                          │
-   SOUTH     WARD              PHARMACY         SOUTH
-    (−Y)    (−6, −6)           (+6, −6)          (−Y)
-   🔵 Blue                               🟢 Green
-              │                      │
-   ═══════════╪══════════════════════╪═══════
+WEST (−X)           EAST (+X)
+                        │                   │
+        ════════════════╪═══════════════════╪════════════════
+        │               │                   │               │
+NORTH   │  RECEPTION    │                   │    ICU        │  NORTH
+ (+Y)   │  (−6, +6)     │                   │  (+6, +6)     │   (+Y)
+        │  🟠 Orange    |                   │  🟡 Yellow    │
+        │               │   West    East    │               │
+        │               │   Gap     Gap     │               │
+        │               │  (−6,0)  (+6,0)   │               │
+        ├───────────────┤                   ├───────────────┤  y=+2 (wall)
+        │                                                   │
+        │                    CORRIDOR                       │  y=0
+        │                     (0, 0)                        │
+        ├───────────────┬                   ┬───────────────┤  y=−2 (wall)
+        │               │                   │               │
+SOUTH   │  WARD         │                   │  PHARMACY     │  SOUTH
+ (−Y)   │  (−6, −6)     │                   │  (+6, −6)     │   (−Y)
+        │  🔵 Blue      │                   │  🟢 Green     │
+        │               │                   │               │
+        ════════════════╪═══════════════════╪════════════════
 ```
 *Robot spawns at (0, 0) facing EAST. Boundary walls at x=±11, y=±11.*
 
