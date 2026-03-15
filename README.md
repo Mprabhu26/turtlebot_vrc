@@ -284,6 +284,8 @@ The simulated hospital consists of a central east-west corridor with 4 colour-co
 | Ward | (-6, -6) | 🔵 Blue | West gap (x=-6) |
 
 ```
+
+```
 *Robot spawns at (0, 0) facing EAST. Boundary walls at x=±11, y=±11.*
 
 ---
