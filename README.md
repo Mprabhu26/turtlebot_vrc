@@ -13,7 +13,8 @@
 [![License](https://img.shields.io/badge/License-MIT-lightgrey)](LICENSE)
 
 *Semester 3 | Winter 2025/26 | Autonomous Intelligent Systems*
-*Frankfurt University of Applied Sciences | Supervised by Prof. Dr. Peter Nauth*
+*Frankfurt University of Applied Sciences | *
+*Supervised by Prof. Dr. Peter Nauth*
 
 </div>
 
