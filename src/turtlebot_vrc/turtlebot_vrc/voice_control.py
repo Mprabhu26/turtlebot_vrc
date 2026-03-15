@@ -43,120 +43,122 @@ ZONES = {
     'pharmacy':  ( 6.0, -6.0),
     'reception': (-6.0,  6.0),
     'ward':      (-6.0, -6.0),
-    'center':    ( 0.0,  0.0),  # recovery position
+    'center':    ( 0.0,  0.0),
 }
 
 CARDINAL_YAW = {
-    'east':       0.0,          'west':       math.pi,
-    'north':      math.pi/2,    'south':     -math.pi/2,
-    'northeast':  math.pi/4,    'northwest':  3*math.pi/4,
-    'southeast': -math.pi/4,    'southwest': -3*math.pi/4,
+    'east':       0.0,         'west':       math.pi,
+    'north':      math.pi/2,   'south':     -math.pi/2,
+    'northeast':  math.pi/4,   'northwest':  3*math.pi/4,
+    'southeast': -math.pi/4,   'southwest': -3*math.pi/4,
 }
 
 # ─────────────────────────────────────────────
-#  AI NLU PROMPT — understands intent from
-#  noisy / accented / partial speech
+#  GROQ NLU PROMPT
 # ─────────────────────────────────────────────
-NLU_SYSTEM = f"""You are the AI brain of a hospital delivery robot. Your job is to understand voice commands even when:
-- There is background noise
-- The speaker has an accent
-- Words are mispronounced or partially heard
-- Speech recognition garbled the words
+NLU_SYSTEM = f"""You are the AI brain of a hospital delivery robot. Understand voice commands even with:
+- Background noise
+- Accents or mispronunciation
+- Garbled speech recognition output
 
-Use your full language understanding to figure out the INTENT of what was said.
+Use semantic understanding to figure out INTENT, not just keywords.
 
-The robot operates in a hospital with 4 zones:
-- ICU (yellow room, northeast) — also called "intensive care", "ICU", "yellow"
-- Pharmacy (green room, southeast) — also called "pharmacy", "medicine", "green", "dispensary"  
-- Reception (orange room, northwest) — also called "reception", "front desk", "lobby", "orange"
-- Ward (blue room, southwest) — also called "ward", "patient room", "blue"
-- Center/origin — also called "center", "centre", "middle", "home", "reset", "origin", "go back to start"
+Hospital zones:
+- ICU (yellow, northeast) — "intensive care", "ICU", "yellow", "i see you", "aicu"
+- Pharmacy (green, southeast) — "pharmacy", "farmasi", "medicine", "green", "dispensary"
+- Reception (orange, northwest) — "reception", "front desk", "lobby", "orange", "auto reception"
+- Ward (blue, southwest) — "ward", "patient room", "blue"
+- Center — "center", "centre", "middle", "home", "reset", "origin"
 
-Return ONLY a JSON object (or array for multiple commands). No explanation. No markdown.
+Return ONLY JSON. No markdown, no explanation.
 
-NAVIGATION — intent to go to a room:
+NAVIGATION:
 {{"action":"navigate","zone":"icu"}}
 {{"action":"navigate","zone":"pharmacy"}}
 {{"action":"navigate","zone":"reception"}}
 {{"action":"navigate","zone":"ward"}}
 {{"action":"navigate","zone":"center"}}
 
-FIXED TURNS — intent to rotate:
-- 90° right: {{"action":"move","linear":0.0,"angular":{-TURN_RATE},"duration":{T90}}}
-- 90° left:  {{"action":"move","linear":0.0,"angular":{TURN_RATE},"duration":{T90}}}
-- 180° / turn around: {{"action":"move","linear":0.0,"angular":{TURN_RATE},"duration":{T180}}}
-- 360° / spin: {{"action":"move","linear":0.0,"angular":{TURN_RATE},"duration":{T360}}}
+FIXED TURNS:
+- right 90°: {{"action":"move","linear":0.0,"angular":{-TURN_RATE},"duration":{T90}}}
+- left 90°:  {{"action":"move","linear":0.0,"angular":{TURN_RATE},"duration":{T90}}}
+- 180°/turn around/donor: {{"action":"move","linear":0.0,"angular":{TURN_RATE},"duration":{T180}}}
+- spin/360°: {{"action":"move","linear":0.0,"angular":{TURN_RATE},"duration":{T360}}}
 
-CONTINUOUS MOVEMENT — runs until stop:
-- Forward: {{"action":"move_continuous","linear":{SPEED},"angular":0.0}}
-- Backward: {{"action":"move_continuous","linear":{-SPEED},"angular":0.0}}
+CONTINUOUS (runs until stop):
+- forward/go/ahead: {{"action":"move_continuous","linear":{SPEED},"angular":0.0}}
+- back/reverse:     {{"action":"move_continuous","linear":{-SPEED},"angular":0.0}}
 
-DISTANCE MOVEMENT — move exact distance:
-- "go forward 3 meters": {{"action":"move","linear":{SPEED},"angular":0.0,"duration":<meters/{SPEED}>}}
-- "go back 2 meters": {{"action":"move","linear":{-SPEED},"angular":0.0,"duration":<meters/{SPEED}>}}
+DISTANCE:
+- "go forward 3 meters": {{"action":"move","linear":{SPEED},"angular":0.0,"duration":<m/{SPEED}>}}
+- "go back 2 meters":    {{"action":"move","linear":{-SPEED},"angular":0.0,"duration":<m/{SPEED}>}}
 
-CARDINAL DIRECTIONS:
-- "go east": {{"action":"cardinal","direction":"east","duration":null}}
+CARDINAL:
+- "go east":          {{"action":"cardinal","direction":"east","duration":null}}
 - "go east 3 meters": {{"action":"cardinal","direction":"east","duration":{round(3/SPEED,2)}}}
-- Directions: east, west, north, south, northeast, northwest, southeast, southwest
+- Supports: east, west, north, south, northeast, northwest, southeast, southwest
 
-STOP — any intent to stop/halt:
-{{"action":"stop"}}
+STOP:
+- stop/halt/freeze/wait/stopp: {{"action":"stop"}}
 
-COMPOUND — multiple commands in one sentence → JSON array:
-"turn right then go forward" → [{{"action":"move","linear":0.0,"angular":{-TURN_RATE},"duration":{T90}}},{{"action":"move_continuous","linear":{SPEED},"angular":0.0}}]
+COMPOUND (multiple commands → array):
+"turn right and go forward" → [{{"action":"move","linear":0.0,"angular":{-TURN_RATE},"duration":{T90}}},{{"action":"move_continuous","linear":{SPEED},"angular":0.0}}]
 
-NOISE HANDLING:
-- If the transcription looks like garbled speech but resembles a command, interpret it
-- "donor" likely means "turn around", "take lift" likely means "turn left"
-- "farmasi" means pharmacy, "stopp" means stop
-- Single words like "right", "left", "forward", "back" are valid commands
-- If truly unrecognisable noise → {{"action":"unknown"}}
-
-Return ONLY the JSON. No markdown, no explanation, no backticks."""
-
+NOISE: garbled words like "donor"=turn around, "take lift"=turn left, "farmasi"=pharmacy, "stopp"=stop, "tyk raut"=turn right
+Unrecognisable noise → {{"action":"unknown"}}"""
 
 # ─────────────────────────────────────────────
-#  LOCAL FALLBACK NLU — when Groq unavailable
+#  LOCAL FALLBACK NLU
 # ─────────────────────────────────────────────
 FALLBACK_PATTERNS = [
-    # stop — highest priority
-    (r'\b(stop|halt|freeze|cancel|pause|wait|enough|brake|stopp)\b', {'action': 'stop'}),
-    # navigation
-    (r'\b(icu|intensive care|yellow)\b', {'action': 'navigate', 'zone': 'icu'}),
-    (r'\b(pharmac|pharma|farmasi|green|medicine|dispensary)\b', {'action': 'navigate', 'zone': 'pharmacy'}),
-    (r'\b(reception|front desk|lobby|orange|receptionist)\b', {'action': 'navigate', 'zone': 'reception'}),
-    (r'\bward\b|\bblue room\b|\bpatient ward\b', {'action': 'navigate', 'zone': 'ward'}),
-    # turns
-    (r'\b(turn around|u.turn|180|donor|turnaround)\b', {'action': 'move', 'linear': 0.0, 'angular': TURN_RATE, 'duration': T180}),
-    (r'\b(spin|360)\b', {'action': 'move', 'linear': 0.0, 'angular': TURN_RATE, 'duration': T360}),
-    (r'\b(turn left|take left|go left|rotate left|take lift|tick left)\b', {'action': 'move', 'linear': 0.0, 'angular': TURN_RATE, 'duration': T90}),
-    (r'\b(turn right|take right|go right|rotate right)\b', {'action': 'move', 'linear': 0.0, 'angular': -TURN_RATE, 'duration': T90}),
-    # cardinal
-    (r'\b(go|head|move)\s+east\b', {'action': 'cardinal', 'direction': 'east', 'duration': None}),
-    (r'\b(go|head|move)\s+west\b', {'action': 'cardinal', 'direction': 'west', 'duration': None}),
-    (r'\b(go|head|move)\s+north\b', {'action': 'cardinal', 'direction': 'north', 'duration': None}),
-    (r'\b(go|head|move)\s+south\b', {'action': 'cardinal', 'direction': 'south', 'duration': None}),
-    # continuous movement
-    (r'\b(forward|go forward|move forward|go ahead|advance|ahead)\b', {'action': 'move_continuous', 'linear': SPEED, 'angular': 0.0}),
-    (r'\b(back|backward|go back|reverse|retreat)\b', {'action': 'move_continuous', 'linear': -SPEED, 'angular': 0.0}),
+    (r'\b(stop|halt|freeze|cancel|pause|wait|enough|brake|stopp)\b',
+     {'action': 'stop'}),
+    (r'\b(icu|i\.c\.u|intensive care|yellow|aicu)\b',
+     {'action': 'navigate', 'zone': 'icu'}),
+    (r'pharmac|pharma|farmasi|\bgreen\b|\bmedicine\b|\bdispensary\b',
+     {'action': 'navigate', 'zone': 'pharmacy'}),
+    (r'\b(reception|front desk|lobby|orange|receptionist|recep)\b',
+     {'action': 'navigate', 'zone': 'reception'}),
+    (r'\bward\b|\bblue room\b|\bpatient ward\b',
+     {'action': 'navigate', 'zone': 'ward'}),
+    (r'\b(center|centre|middle|home|reset|origin)\b',
+     {'action': 'navigate', 'zone': 'center'}),
+    (r'\b(turn around|u.turn|180|donor|turnaround)\b',
+     {'action': 'move', 'linear': 0.0, 'angular': TURN_RATE, 'duration': T180}),
+    (r'\b(spin|360)\b',
+     {'action': 'move', 'linear': 0.0, 'angular': TURN_RATE, 'duration': T360}),
+    (r'\b(turn left|take left|go left|rotate left|take lift|tick left|left turn)\b',
+     {'action': 'move', 'linear': 0.0, 'angular': TURN_RATE, 'duration': T90}),
+    (r'\b(turn right|take right|go right|rotate right|right turn)\b',
+     {'action': 'move', 'linear': 0.0, 'angular': -TURN_RATE, 'duration': T90}),
+    (r'\b(go|head|move)\s+east\b',      {'action': 'cardinal', 'direction': 'east',      'duration': None}),
+    (r'\b(go|head|move)\s+west\b',      {'action': 'cardinal', 'direction': 'west',      'duration': None}),
+    (r'\b(go|head|move)\s+north\b',     {'action': 'cardinal', 'direction': 'north',     'duration': None}),
+    (r'\b(go|head|move)\s+south\b',     {'action': 'cardinal', 'direction': 'south',     'duration': None}),
+    (r'\b(go|head|move)\s+northeast\b', {'action': 'cardinal', 'direction': 'northeast', 'duration': None}),
+    (r'\b(go|head|move)\s+northwest\b', {'action': 'cardinal', 'direction': 'northwest', 'duration': None}),
+    (r'\b(go|head|move)\s+southeast\b', {'action': 'cardinal', 'direction': 'southeast', 'duration': None}),
+    (r'\b(go|head|move)\s+southwest\b', {'action': 'cardinal', 'direction': 'southwest', 'duration': None}),
+    (r'\b(forward|go forward|move forward|go ahead|advance|ahead|straight)\b',
+     {'action': 'move_continuous', 'linear': SPEED, 'angular': 0.0}),
+    (r'\b(back|backward|go back|reverse|retreat)\b',
+     {'action': 'move_continuous', 'linear': -SPEED, 'angular': 0.0}),
 ]
 
 def local_nlu(text):
     t = text.lower().strip()
-    # Check distance movement
-    dist_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:meter|metre|m)\b', t)
-    dist = float(dist_match.group(1)) if dist_match else None
-    if dist:
-        if re.search(r'\bback|backward|reverse\b', t):
+    # Distance movement
+    m = re.search(r'(\d+(?:\.\d+)?)\s*(?:meter|metre|m)\b', t)
+    if m:
+        dist = float(m.group(1))
+        if re.search(r'\b(back|backward|reverse)\b', t):
             return {'action': 'move', 'linear': -SPEED, 'angular': 0.0, 'duration': round(dist/SPEED, 2)}
-        if re.search(r'\bforward|ahead\b', t):
+        if re.search(r'\b(forward|ahead)\b', t):
             return {'action': 'move', 'linear': SPEED, 'angular': 0.0, 'duration': round(dist/SPEED, 2)}
     for pattern, result in FALLBACK_PATTERNS:
         if re.search(pattern, t):
             return result
     return {'action': 'unknown'}
-
 
 NOISE_WORDS = {'gracias','merci','danke','okay','ok','thank you','thanks','yes','no',
                'hmm','uh','um','ah','bye','hello','hi','yeah','sure','the','a','an'}
@@ -210,7 +212,7 @@ class VoiceControlNode(Node):
             self.get_logger().warn(f'VAD: {e}')
 
         self.get_logger().info('=== AI Voice Control Ready ===')
-        self.get_logger().info('=== Say anything — AI will understand your intent ===')
+        self.get_logger().info('=== Commands: go to ICU/pharmacy/ward/reception, forward, back, turn left/right, stop ===')
         threading.Thread(target=self._listen_loop, daemon=True).start()
 
     def _odom_cb(self, msg):
@@ -239,6 +241,11 @@ class VoiceControlNode(Node):
     def _stop(self):
         self._pub(0.0, 0.0)
 
+    def _stop_firm(self):
+        for _ in range(10):
+            self._stop()
+            time.sleep(0.05)
+
     # ── Continuous movement ──
     def _start_continuous(self, linear, angular):
         def _run():
@@ -250,7 +257,7 @@ class VoiceControlNode(Node):
                     break
                 self._pub(linear, angular)
                 time.sleep(0.05)
-            self._stop()
+            self._stop_firm()
             self.moving_continuous = False
             self.get_logger().info('Stopped')
         threading.Thread(target=_run, daemon=True).start()
@@ -263,7 +270,6 @@ class VoiceControlNode(Node):
             time.sleep(0.05)
         self._stop()
         time.sleep(0.1)
-        return True
 
     # ── Cardinal direction ──
     def _cardinal_move(self, direction, duration=None):
@@ -282,7 +288,7 @@ class VoiceControlNode(Node):
         else:
             self._start_continuous(SPEED, 0.0)
 
-    # ── Navigation ──
+    # ── Navigation — 4-step room-exit routing ──
     def _navigate_to_zone(self, dst):
         with self.nav_lock:
             if self.navigating:
@@ -301,59 +307,48 @@ class VoiceControlNode(Node):
             f'=== Navigating to {dst.upper()} ({target_x},{target_y}) '
             f'from ({self.x:.2f},{self.y:.2f}) ===')
 
-        # Find nearest safe waypoint (block center or corridor center)
-        # This prevents the robot from hitting walls when starting mid-corridor
-        SAFE_POINTS = {
-            'center':    (0.0,  0.0),
-            'icu':       (6.0,  6.0),
-            'pharmacy':  (6.0, -6.0),
-            'reception': (-6.0, 6.0),
-            'ward':      (-6.0,-6.0),
-            'east_gap':  (6.0,  0.0),  # corridor gap east
-            'west_gap':  (-6.0, 0.0),  # corridor gap west
-        }
-
-        def dist_to(px, py):
-            return math.sqrt((self.x-px)**2 + (self.y-py)**2)
-
-        # Find nearest safe point (excluding the target itself)
-        nearest = min(
-            [(name, px, py) for name,(px,py) in SAFE_POINTS.items() if name != dst],
-            key=lambda p: dist_to(p[1], p[2])
-        )
-        nearest_name, nearest_x, nearest_y = nearest
-        self.get_logger().info(f'  Nearest safe point: {nearest_name} ({nearest_x},{nearest_y})')
-
-        # Build waypoints: nearest safe → corridor at target x → target
         if dst == 'center':
             waypoints = [(0.0, 0.0)]
         else:
             waypoints = []
-            # Step 1: go to nearest safe point if not already close
-            if dist_to(nearest_x, nearest_y) > 0.5:
-                waypoints.append((nearest_x, nearest_y))
-            # Step 2: get to corridor (y=0) at target x
-            waypoints.append((target_x, 0.0))
-            # Step 3: enter room
+            # Determine which gap to use based on target
+            gap_x = target_x  # use target's x gap (east=+6, west=-6)
+
+            # Step 1: If inside a room (|y| > 2.2), must exit through correct gap
+            if abs(self.y) > 2.2:
+                # Step 1a: Move to gap x at current y (align horizontally first)
+                if abs(self.x - gap_x) > 0.5:
+                    waypoints.append((gap_x, self.y))
+                # Step 1b: Exit through gap to just inside corridor
+                exit_y = 1.5 if self.y > 0 else -1.5
+                waypoints.append((gap_x, exit_y))
+            # Step 2: Get to corridor center y=0
+            waypoints.append((gap_x, 0.0))
+            # Step 3: Travel along corridor if needed (already at gap_x)
+            # Step 4: Enter target room
             waypoints.append((target_x, target_y))
 
         for wx, wy in waypoints:
             if not self.navigating: break
             self.get_logger().info(f'  Waypoint → ({wx:.1f},{wy:.1f})')
-            if not self._move_to(wx, wy): break
+            self._move_to(wx, wy)
 
         if self.navigating:
-            self.current_zone = dst
-            # Stop firmly
-            for _ in range(10):
-                self._stop()
-                time.sleep(0.05)
-            self.get_logger().info(f'=== Arrived at {dst.upper()} ===')
+            dx = target_x - self.x
+            dy = target_y - self.y
+            dist = math.sqrt(dx*dx + dy*dy)
+            if dist < 1.5:
+                self.current_zone = dst
+                self._stop_firm()
+                self.get_logger().info(f'=== Arrived at {dst.upper()} ===')
+            else:
+                self._stop_firm()
+                self.get_logger().warn(f'Did not reach {dst.upper()} ({dist:.1f}m away) — say command again')
         self.navigating = False
 
     def _move_to(self, tx, ty):
         TOLERANCE = 0.3
-        MAX_TIME  = 30.0  # reduced — fail fast and try next waypoint
+        MAX_TIME  = 30.0
         start = time.time()
         wall_hits = 0
 
@@ -361,69 +356,75 @@ class VoiceControlNode(Node):
             dx = tx - self.x; dy = ty - self.y
             dist = math.sqrt(dx*dx + dy*dy)
             if dist < TOLERANCE:
-                # Stop firmly — publish multiple times to cancel momentum
-                for _ in range(10):
-                    self._stop()
-                    time.sleep(0.05)
-                return True
+                self._stop_firm()
+                return
 
             desired_yaw = math.atan2(dy, dx)
             yaw_err = desired_yaw - self.yaw
             while yaw_err >  math.pi: yaw_err -= 2*math.pi
             while yaw_err < -math.pi: yaw_err += 2*math.pi
 
+            # Wall recovery
             if self.front_dist < WALL_DIST_NAV and abs(yaw_err) < 0.4:
                 wall_hits += 1
                 self.get_logger().warn(f'Wall hit #{wall_hits} — backing up')
-                recover_end = time.time() + 0.8
-                while time.time() < recover_end and self.navigating:
+                end = time.time() + 0.8
+                while time.time() < end and self.navigating:
                     self._pub(-SPEED * 0.5, 0.0)
                     time.sleep(0.05)
                 self._stop()
                 time.sleep(0.2)
                 if wall_hits > 3:
-                    self.get_logger().warn('Skipping waypoint — too many hits')
-                    return True
+                    self.get_logger().warn('Skipping waypoint')
+                    return
                 continue
 
             angular = max(-TURN_RATE, min(TURN_RATE, 3.0 * yaw_err))
-            # Slow down when close to target
-            speed = SPEED if dist > 1.0 else SPEED * 0.4
+            speed   = SPEED if dist > 1.0 else SPEED * 0.4
             linear  = speed if abs(yaw_err) < 0.3 else 0.0
             self._pub(linear, angular)
             time.sleep(0.05)
 
         self._stop()
-        self.get_logger().warn(f'Waypoint ({tx:.1f},{ty:.1f}) timeout — continuing')
-        return True  # continue to next waypoint even on timeout
+        self.get_logger().warn(f'Waypoint ({tx:.1f},{ty:.1f}) timeout')
 
-    # ── AI NLU — Groq understands intent from noisy/accented speech ──
+    # ── NLU — Local first, Groq for unclear commands ──
     def _nlu(self, text):
+        # Step 1: Try local NLU — zero API calls for standard commands
+        local_result = local_nlu(text)
+        if local_result.get('action') != 'unknown':
+            self.get_logger().info(f'Local NLU: {local_result}')
+            return local_result
+
+        # Step 2: Groq for accented/garbled/complex speech
         if self.groq_available and self.groq_client:
             try:
                 resp = self.groq_client.chat.completions.create(
                     model='llama-3.3-70b-versatile',
                     messages=[
                         {'role': 'system', 'content': NLU_SYSTEM},
-                        {'role': 'user',   'content': f'Speech transcription: "{text}"'}
+                        {'role': 'user',   'content': f'Transcription: "{text}"'}
                     ],
                     max_tokens=150, temperature=0.0)
                 raw = re.sub(r'```json|```', '',
                              resp.choices[0].message.content.strip()).strip()
                 result = json.loads(raw)
-                self.get_logger().info(f'AI understood: {result}')
+                self.get_logger().info(f'Groq NLU: {result}')
                 return result
             except Exception as e:
                 err = str(e)
                 if '429' in err or 'quota' in err.lower() or 'rate' in err.lower():
-                    self.get_logger().warn('Groq quota — using local NLU')
+                    self.get_logger().warn('Groq quota hit — local NLU only (restores in 60s)')
                     self.groq_available = False
+                    def restore():
+                        time.sleep(60.0)
+                        self.groq_available = True
+                        self.get_logger().info('Groq restored')
+                    threading.Thread(target=restore, daemon=True).start()
                 else:
-                    self.get_logger().warn(f'Groq error: {e} — using local NLU')
+                    self.get_logger().warn(f'Groq error: {e}')
 
-        result = local_nlu(text)
-        self.get_logger().info(f'Local NLU: {result}')
-        return result
+        return local_result
 
     # ── Dispatch ──
     def _dispatch(self, text):
@@ -443,7 +444,7 @@ class VoiceControlNode(Node):
                 self.navigating = False
                 self.moving_continuous = False
                 self.moving_timed = False
-                self._stop()
+                self._stop_firm()
                 self.get_logger().info('STOPPED')
                 return
 
@@ -492,7 +493,7 @@ class VoiceControlNode(Node):
             elif action == 'unknown':
                 self.get_logger().info('Could not understand command')
 
-    # ── Transcription ──
+    # ── Transcription — Groq Whisper primary, faster-whisper fallback ──
     def _transcribe(self, audio_np):
         if self.groq_client:
             try:
@@ -503,7 +504,7 @@ class VoiceControlNode(Node):
                 result = self.groq_client.audio.transcriptions.create(
                     model='whisper-large-v3-turbo', file=buf,
                     response_format='text', language='en',
-                    prompt='Hospital robot: go to pharmacy, ICU, ward, reception, turn left, turn right, go forward, go back, stop, turn around.')
+                    prompt='Hospital robot commands: go to pharmacy, go to ICU, go to ward, go to reception, turn left, turn right, go forward, go back, stop, turn around, spin.')
                 text = str(result).strip()
                 if text: return text
             except Exception as e:
@@ -519,7 +520,7 @@ class VoiceControlNode(Node):
     # ── VAD — energy + silero ──
     def _has_speech(self, audio_np):
         energy = np.sqrt(np.mean(audio_np ** 2))
-        if energy < 0.01: return False
+        if energy < 0.02: return False
         if self.vad_model is None: return True
         try:
             import torch
@@ -557,7 +558,7 @@ class VoiceControlNode(Node):
 
         def process_loop():
             nonlocal chunks_processed
-            self.get_logger().info('AI processor started — listening for commands')
+            self.get_logger().info('Process thread started')
             while rclpy.ok():
                 try:
                     audio_np = audio_queue.get(timeout=1.0)
@@ -573,11 +574,10 @@ class VoiceControlNode(Node):
                     self.get_logger().error(f'Process error: {e}')
                     time.sleep(0.1)
 
-        # Heartbeat — confirms process thread is alive
         def heartbeat():
             while rclpy.ok():
                 time.sleep(15.0)
-                self.get_logger().info(f'Listening — chunks processed: {chunks_processed}')
+                self.get_logger().info(f'Listening — chunks: {chunks_processed}')
         threading.Thread(target=heartbeat, daemon=True).start()
         threading.Thread(target=process_loop, daemon=True).start()
 
