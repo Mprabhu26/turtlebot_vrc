@@ -43,6 +43,7 @@ ZONES = {
     'pharmacy':  ( 6.0, -6.0),
     'reception': (-6.0,  6.0),
     'ward':      (-6.0, -6.0),
+    'center':    ( 0.0,  0.0),  # recovery position
 }
 
 CARDINAL_YAW = {
@@ -69,6 +70,7 @@ The robot operates in a hospital with 4 zones:
 - Pharmacy (green room, southeast) — also called "pharmacy", "medicine", "green", "dispensary"  
 - Reception (orange room, northwest) — also called "reception", "front desk", "lobby", "orange"
 - Ward (blue room, southwest) — also called "ward", "patient room", "blue"
+- Center/origin — also called "center", "centre", "middle", "home", "reset", "origin", "go back to start"
 
 Return ONLY a JSON object (or array for multiple commands). No explanation. No markdown.
 
@@ -77,6 +79,7 @@ NAVIGATION — intent to go to a room:
 {{"action":"navigate","zone":"pharmacy"}}
 {{"action":"navigate","zone":"reception"}}
 {{"action":"navigate","zone":"ward"}}
+{{"action":"navigate","zone":"center"}}
 
 FIXED TURNS — intent to rotate:
 - 90° right: {{"action":"move","linear":0.0,"angular":{-TURN_RATE},"duration":{T90}}}
@@ -298,12 +301,41 @@ class VoiceControlNode(Node):
             f'=== Navigating to {dst.upper()} ({target_x},{target_y}) '
             f'from ({self.x:.2f},{self.y:.2f}) ===')
 
-        # Fixed reliable waypoints: corridor → room gap → room centre
-        waypoints = [
-            (self.x,    0.0),
-            (target_x,  0.0),
-            (target_x,  target_y),
-        ]
+        # Find nearest safe waypoint (block center or corridor center)
+        # This prevents the robot from hitting walls when starting mid-corridor
+        SAFE_POINTS = {
+            'center':    (0.0,  0.0),
+            'icu':       (6.0,  6.0),
+            'pharmacy':  (6.0, -6.0),
+            'reception': (-6.0, 6.0),
+            'ward':      (-6.0,-6.0),
+            'east_gap':  (6.0,  0.0),  # corridor gap east
+            'west_gap':  (-6.0, 0.0),  # corridor gap west
+        }
+
+        def dist_to(px, py):
+            return math.sqrt((self.x-px)**2 + (self.y-py)**2)
+
+        # Find nearest safe point (excluding the target itself)
+        nearest = min(
+            [(name, px, py) for name,(px,py) in SAFE_POINTS.items() if name != dst],
+            key=lambda p: dist_to(p[1], p[2])
+        )
+        nearest_name, nearest_x, nearest_y = nearest
+        self.get_logger().info(f'  Nearest safe point: {nearest_name} ({nearest_x},{nearest_y})')
+
+        # Build waypoints: nearest safe → corridor at target x → target
+        if dst == 'center':
+            waypoints = [(0.0, 0.0)]
+        else:
+            waypoints = []
+            # Step 1: go to nearest safe point if not already close
+            if dist_to(nearest_x, nearest_y) > 0.5:
+                waypoints.append((nearest_x, nearest_y))
+            # Step 2: get to corridor (y=0) at target x
+            waypoints.append((target_x, 0.0))
+            # Step 3: enter room
+            waypoints.append((target_x, target_y))
 
         for wx, wy in waypoints:
             if not self.navigating: break
@@ -312,12 +344,16 @@ class VoiceControlNode(Node):
 
         if self.navigating:
             self.current_zone = dst
+            # Stop firmly
+            for _ in range(10):
+                self._stop()
+                time.sleep(0.05)
             self.get_logger().info(f'=== Arrived at {dst.upper()} ===')
         self.navigating = False
 
     def _move_to(self, tx, ty):
         TOLERANCE = 0.3
-        MAX_TIME  = 90.0
+        MAX_TIME  = 30.0  # reduced — fail fast and try next waypoint
         start = time.time()
         wall_hits = 0
 
@@ -325,37 +361,41 @@ class VoiceControlNode(Node):
             dx = tx - self.x; dy = ty - self.y
             dist = math.sqrt(dx*dx + dy*dy)
             if dist < TOLERANCE:
-                self._stop(); time.sleep(0.1); return True
+                # Stop firmly — publish multiple times to cancel momentum
+                for _ in range(10):
+                    self._stop()
+                    time.sleep(0.05)
+                return True
 
             desired_yaw = math.atan2(dy, dx)
             yaw_err = desired_yaw - self.yaw
             while yaw_err >  math.pi: yaw_err -= 2*math.pi
             while yaw_err < -math.pi: yaw_err += 2*math.pi
 
-            # Wall recovery — back up and retry
             if self.front_dist < WALL_DIST_NAV and abs(yaw_err) < 0.4:
                 wall_hits += 1
                 self.get_logger().warn(f'Wall hit #{wall_hits} — backing up')
-                recover_end = time.time() + 0.6
+                recover_end = time.time() + 0.8
                 while time.time() < recover_end and self.navigating:
                     self._pub(-SPEED * 0.5, 0.0)
                     time.sleep(0.05)
                 self._stop()
                 time.sleep(0.2)
-                if wall_hits > 5:
-                    self.get_logger().warn('Too many wall hits — skipping waypoint')
-                    return True  # skip this waypoint, try next
+                if wall_hits > 3:
+                    self.get_logger().warn('Skipping waypoint — too many hits')
+                    return True
                 continue
 
             angular = max(-TURN_RATE, min(TURN_RATE, 3.0 * yaw_err))
-            linear  = SPEED if abs(yaw_err) < 0.3 else 0.0
+            # Slow down when close to target
+            speed = SPEED if dist > 1.0 else SPEED * 0.4
+            linear  = speed if abs(yaw_err) < 0.3 else 0.0
             self._pub(linear, angular)
             time.sleep(0.05)
 
         self._stop()
-        if time.time() - start >= MAX_TIME:
-            self.get_logger().warn('Navigation timeout')
-        return False
+        self.get_logger().warn(f'Waypoint ({tx:.1f},{ty:.1f}) timeout — continuing')
+        return True  # continue to next waypoint even on timeout
 
     # ── AI NLU — Groq understands intent from noisy/accented speech ──
     def _nlu(self, text):
