@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/logo.png" alt="Frankfurt University of Applied Sciences" width="180"/>
+<img src="./assets/logo.png" alt="Frankfurt University of Applied Sciences" width="180"/>
 
 # 🏥 VRC-7 — Voice Recognition Control for TurtleBot3
 
@@ -271,9 +271,8 @@ ros2 run turtlebot_vrc voice_control
 
 ## World Layout
 
-<!-- PLACEHOLDER: Open Gazebo, press T for top-down view, take a screenshot.
-     Save as assets/world_screenshot.png -->
-![Hospital World](assets/world_screenshot.png)
+
+![Hospital World](./assets/world_screenshot.png)
 
 The simulated hospital consists of a central east-west corridor with 4 colour-coded rooms. The corridor walls at y=±2 have entry gaps at x=±6 — the only way in and out of each room. The robot's navigation always routes through these gaps to avoid wall collisions.
 
