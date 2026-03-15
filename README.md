@@ -1,6 +1,6 @@
 <div align="center">
 
-<!-- <img src="assets/logo.png" alt="Frankfurt University of Applied Sciences" width="180"/> -->
+<img src="assets/logo.png" alt="Frankfurt University of Applied Sciences" width="180"/>
 
 # 🏥 VRC-7 — Voice Recognition Control for TurtleBot3
 
