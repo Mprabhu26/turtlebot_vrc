@@ -2,7 +2,8 @@
 
 <img src="./assets/logo.png" alt="Frankfurt University of Applied Sciences" width="180"/>
 
-# 🏥 VRC-7 : AI Powered Voice Control for Autonomous Robots- Accent and Noise Robustness in ROS2
+# 🏥 VRC-7 — AI-Powered Voice Control for Autonomous Robots
+### Accent and Noise Robustness in ROS2
 
 **Dual-layer NLU pipeline achieving 94% accent robustness on TurtleBot3 in ROS2 Humble + Gazebo Classic**
 
@@ -22,7 +23,6 @@
 ## 📋 Table of Contents
 
 - [Overview](#overview)
-- [Demo](#demo)
 - [System Architecture](#system-architecture)
 - [Features](#features)
 - [Prerequisites](#prerequisites)
@@ -51,13 +51,7 @@ A key design goal was robustness to **accented speech and background noise**. Th
 
 ---
 
-## Demo
 
-![Demo](assets/demo.gif)
-
-> 💡 The robot understands accented and noisy speech through Groq AI (Whisper + LLaMA 3.3 70B). Commands like *"farmasi"*, *"take lift"*, *"donor"*, *"aicu"*, and *"tyk raut"* are correctly interpreted as pharmacy, turn left, turn around, ICU, and turn right respectively.
-
----
 
 ## System Architecture
 
