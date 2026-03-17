@@ -2,8 +2,7 @@
 
 <img src="./assets/logo.png" alt="Frankfurt University of Applied Sciences" width="180"/>
 
-# 🏥 VRC-7 — AI-Powered Voice Control for Autonomous Robots
-### Accent and Noise Robustness in ROS2
+# 🏥 VRC-7 : AI Powered Voice Control for Autonomous Robots- Accent and Noise Robustness in ROS2
 
 **Dual-layer NLU pipeline achieving 94% accent robustness on TurtleBot3 in ROS2 Humble + Gazebo Classic**
 
