@@ -68,7 +68,7 @@ A key design goal was robustness to **accented speech and background noise**. Th
 
 ### 📊 Presentation
 
-[Download Presentation Slides (PPTX)](./docs/VRC7_Presentation.pptx)
+[Download Presentation Slides (PPTX)](.docs/VRC_7 _Ras_Pra _Presentation)
 
 ---
 
@@ -381,8 +381,8 @@ turtlebot_vrc/                    ← repository root
 │       ├── .gitignore
 │       └── start_hospital.sh
 ├── docs/
-│   ├── Project_Report.pdf        ← IEEE conference paper (PDF)
-│   ├── VRC7_Presentation.pptx   ← presentation slides
+│   ├── VRC_7 _Ras_Pra _FinalReport.pdf        ← IEEE conference paper (PDF)
+│   ├── VRC_7 _Ras_Pra _Presentation.pptx   ← presentation slides
 │   ├── Recording1.mp4            ← demo recording (navigation)
 │   ├── Recording2.mp4            ← demo recording (voice commands)
 │   └── Recording3.mp4            ← demo recording (full system)
@@ -417,10 +417,10 @@ ROS2 Python package configuration. Registers `voice_control` as a console script
 ### `package.xml`
 ROS2 package manifest declaring runtime dependencies: `rclpy`, `geometry_msgs`, `nav_msgs`, `sensor_msgs`, `std_msgs`.
 
-### `docs/Project_Report.pdf`
+### `docs/VRC_7 _Ras_Pra _FinalReport.pdf`
 Full IEEE-format technical report covering system design, dual-layer NLU architecture, 4-step navigation algorithm, experimental results (ablation study, per-command accuracy, API efficiency), challenges and solutions, and future work.
 
-### `docs/VRC7_Presentation.pptx`
+### `docs/VRC_7 _Ras_Pra _Presentation.pptx`
 12-slide presentation deck covering the problem statement, system contributions, architecture, results, and future directions. Used for the project demo day.
 
 ### `docs/Recording1.mp4`, `Recording2.mp4`, `Recording3.mp4`
@@ -465,8 +465,8 @@ All project documentation, presentation slides, and demo recordings are availabl
 
 | File | Description |
 |------|-------------|
-| [Project_Report.pdf](./docs/Project_Report.pdf) | Full technical report in IEEE format |
-| [VRC7_Presentation.pptx](./docs/VRC7_Presentation.pptx) | Project presentation slides |
+| [VRC_7 _Ras_Pra _FinalReport.pdf](./docs/VRC_7%20_Ras_Pra%20_FinalReport.pdf) | Full technical report in IEEE format |
+| [VRC_7 _Ras_Pra _Presentation.pptx](./docs/VRC_7%20_Ras_Pra%20_Presentation.pptx) | Project presentation slides |
 | [Recording1.mp4](./docs/Recording1.mp4) | Demo recording — navigation |
 | [Recording2.mp4](./docs/Recording2.mp4) | Demo recording — voice commands |
 | [Recording3.mp4](./docs/Recording3.mp4) | Demo recording — basic commands |
