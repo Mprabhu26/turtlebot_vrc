@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import os
-os.environ.setdefault('PULSE_SERVER', 'unix:/mnt/wslg/PulseServer')
-
+os.environ['PULSE_SERVER'] = 'unix:/mnt/wslg/runtime-dir/pulse/native'
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
@@ -520,7 +519,7 @@ class VoiceControlNode(Node):
     # ── VAD — energy + silero ──
     def _has_speech(self, audio_np):
         energy = np.sqrt(np.mean(audio_np ** 2))
-        if energy < 0.02: return False
+        if energy < 0.003: return False
         if self.vad_model is None: return True
         try:
             import torch
@@ -540,8 +539,12 @@ class VoiceControlNode(Node):
             try:
                 devs = sd.query_devices()
                 for i, d in enumerate(devs):
-                    if 'pulse' in d['name'].lower() and d['max_input_channels'] > 0:
+                    if d["max_input_channels"] > 0 and any(x in d["name"].lower() for x in ["pulse", "rdp", "default"]):
                         self.get_logger().info(f'Audio: {d["name"]}')
+                        return i
+                for i, d in enumerate(devs):
+                    if d["max_input_channels"] > 0:
+                        self.get_logger().info(f'Audio fallback: {d["name"]}')
                         return i
             except: pass
             return None
