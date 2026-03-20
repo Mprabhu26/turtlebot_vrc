@@ -469,7 +469,7 @@ All project documentation, presentation slides, and demo recordings are availabl
 | [VRC7_Presentation.pptx](./docs/VRC7_Presentation.pptx) | Project presentation slides |
 | [Recording1.mp4](./docs/Recording1.mp4) | Demo recording — navigation |
 | [Recording2.mp4](./docs/Recording2.mp4) | Demo recording — voice commands |
-| [Recording3.mp4](./docs/Recording3.mp4) | Demo recording — full system |
+| [Recording3.mp4](./docs/Recording3.mp4) | Demo recording — basic commands |
 
 ---
 
