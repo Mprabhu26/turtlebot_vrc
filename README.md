@@ -23,6 +23,7 @@
 ## 📋 Table of Contents
 
 - [Overview](#overview)
+- [Demo](#demo)
 - [System Architecture](#system-architecture)
 - [Features](#features)
 - [Prerequisites](#prerequisites)
@@ -48,6 +49,26 @@
 A key design goal was robustness to **accented speech and background noise**. The system uses a dual-layer NLU pipeline: a local regex engine handles standard commands with zero API calls, while Groq LLaMA 3.3 70B handles garbled or accented speech that the local engine cannot interpret. Navigation uses **live odometry feedback** and a structured 4-step room-exit routing strategy to avoid wall collisions.
 
 **Key results:** 94% NLU accuracy on accented speech, 100% navigation success from centre position, 85% reduction in LLM API calls vs full-cloud approaches.
+
+---
+
+## Demo
+
+![Demo](./assets/demo.gif)
+
+> 💡 The robot understands accented and noisy speech through Groq AI (Whisper + LLaMA 3.3 70B). Commands like *"farmasi"*, *"take lift"*, and *"donor"* are correctly interpreted as pharmacy, turn left, and turn around.
+
+### 📹 Demo Recordings
+
+| Recording | Description |
+|-----------|-------------|
+| [Recording1](./docs/Recording1.mp4) | Robot navigating from centre to all four zones |
+| [Recording2](./docs/Recording2.mp4) | Voice commands — accent and noise robustness demo |
+| [Recording3](./docs/Recording3.mp4) | Full system demo — voice + navigation + stop commands |
+
+### 📊 Presentation
+
+[Download Presentation Slides (PPTX)](./docs/VRC7_Presentation.pptx)
 
 ---
 
@@ -360,11 +381,15 @@ turtlebot_vrc/                    ← repository root
 │       ├── .gitignore
 │       └── start_hospital.sh
 ├── docs/
-│   └── Project_Report.pdf        ← IEEE conference paper
+│   ├── Project_Report.pdf        ← IEEE conference paper (PDF)
+│   ├── VRC7_Presentation.pptx   ← presentation slides
+│   ├── Recording1.mp4            ← demo recording (navigation)
+│   ├── Recording2.mp4            ← demo recording (voice commands)
+│   └── Recording3.mp4            ← demo recording (full system)
 ├── assets/
-│   ├── world_screenshot.png
-│   ├── logo.png
-│   └── demo.gif                  ← (add before publishing)
+│   ├── demo.gif                  ← animated demo (GIF)
+│   ├── world_screenshot.png      ← Gazebo top-down screenshot
+│   └── logo.png                  ← Frankfurt UAS logo
 ├── .gitignore
 ├── README.md
 └── start_hospital.sh
@@ -392,6 +417,24 @@ ROS2 Python package configuration. Registers `voice_control` as a console script
 ### `package.xml`
 ROS2 package manifest declaring runtime dependencies: `rclpy`, `geometry_msgs`, `nav_msgs`, `sensor_msgs`, `std_msgs`.
 
+### `docs/Project_Report.pdf`
+Full IEEE-format technical report covering system design, dual-layer NLU architecture, 4-step navigation algorithm, experimental results (ablation study, per-command accuracy, API efficiency), challenges and solutions, and future work.
+
+### `docs/VRC7_Presentation.pptx`
+12-slide presentation deck covering the problem statement, system contributions, architecture, results, and future directions. Used for the project demo day.
+
+### `docs/Recording1.mp4`, `Recording2.mp4`, `Recording3.mp4`
+Demo video recordings showing the full system in operation: voice-guided navigation across all four hospital zones, accent robustness testing, and manual movement commands.
+
+### `assets/demo.gif`
+Animated GIF demo showing the robot navigating the hospital world in response to voice commands. Used in the README preview.
+
+### `assets/world_screenshot.png`
+Top-down Gazebo screenshot of the `hospital_vrc.world` simulation showing all four colour-coded zones and the central corridor.
+
+### `assets/logo.png`
+Frankfurt University of Applied Sciences logo displayed in the README header.
+
 ---
 
 ## Known Limitations
@@ -416,15 +459,17 @@ ROS2 package manifest declaring runtime dependencies: `rclpy`, `geometry_msgs`, 
 
 ---
 
-## 📄 Academic Publication
+## 📄 Project Documentation
 
-This project is documented in our IEEE conference paper:
+All project documentation, presentation slides, and demo recordings are available in the `docs/` folder:
 
-> M. Prabhu and R. Rashid, "VRC-7: A Hybrid Local-Cloud AI Pipeline
-> for Accent-Robust Voice Control of Autonomous Hospital Delivery
-> Robots in ROS2," *IEEE EUROCON 2025* (under review).
-
-[Download PDF](./docs/Project_Report.pdf)
+| File | Description |
+|------|-------------|
+| [Project_Report.pdf](./docs/Project_Report.pdf) | Full technical report in IEEE format |
+| [VRC7_Presentation.pptx](./docs/VRC7_Presentation.pptx) | Project presentation slides |
+| [Recording1.mp4](./docs/Recording1.mp4) | Demo recording — navigation |
+| [Recording2.mp4](./docs/Recording2.mp4) | Demo recording — voice commands |
+| [Recording3.mp4](./docs/Recording3.mp4) | Demo recording — full system |
 
 ---
 
@@ -446,9 +491,9 @@ We would like to express our sincere gratitude to **Prof. Dr. Peter Nauth** for 
 
 ## References
 
-[1] P. Nauth, G. Schäfer, and M. Detert, "Voice Control for Mobile Robots in Noisy Environments," *Frankfurt University of Applied Sciences Technical Report*, 2025.
+[1] A. Vaswani, N. Shazeer, N. Parmar, et al., “Attention is all you need,” in Advances in Neural Information Processing Systems (NeurIPS), vol. 30, 2017.
 
-[2] A. B. Baker et al., "Accent-Robust Speech Recognition for Human-Robot Interaction," in *IEEE EUROCON 2025*, July 2025.
+[2]  M. Ahn, A. Brohan, N. Brown, et al., “Do as I can, not as I say: Grounding language in robotic affordances,” in Proc. Conference on Robot Learning (CoRL), 2022.
 
 [3] ROS2 Humble Documentation. [Online]. Available: https://docs.ros.org/en/humble/
 
